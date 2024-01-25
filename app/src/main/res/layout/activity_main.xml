@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <data>
+        <variable
+            name="vm"
+            type="com.mainxml.visualgo.MainVM" />
+    </data>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity"
+        tools:ignore="HardcodedText" >
+
+        <com.mainxml.visualgo.widget.VisualArray
+            android:id="@+id/array"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <Button
+            android:id="@+id/reset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="重置"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginStart="8dp" />
+
+        <Button
+            android:id="@+id/selection_sort"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="选择排序"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/reset"
+            android:layout_marginStart="8dp"/>
+
+        <Button
+            android:id="@+id/bubble_sort"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="冒泡排序"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/selection_sort"
+            android:layout_marginStart="8dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</layout>
