@@ -1,7 +1,7 @@
 package com.mainxml.visualgo
 
 import android.os.Bundle
-import com.mainxml.visualgo.animation.VisualAnimator
+import com.mainxml.visualgo.animation.VisualArrayAnimator
 import com.mainxml.visualgo.base.BaseActivity
 import com.mainxml.visualgo.databinding.ActivityMainBinding
 
@@ -11,7 +11,9 @@ import com.mainxml.visualgo.databinding.ActivityMainBinding
  */
 class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
 
-    private lateinit var visualAnimator: VisualAnimator
+    private val animator: VisualArrayAnimator by lazy {
+        VisualArrayAnimator(binging.array)
+    }
 
     override val layoutId: Int
         get() = R.layout.activity_main
@@ -20,27 +22,24 @@ class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
         super.onCreate(savedInstanceState)
 
         // 待排序数组
-        val a = intArrayOf(4, 5, 3, 2, 1)
-
-        // 创建动画管理者
-        visualAnimator = VisualAnimator(binging.array)
-
+        val a = intArrayOf(1, 1, 2, 4, 5, 3)
         // 显示数组
-        visualAnimator.showArray(a)
-
+        animator.showArray(a)
         // 点击重制
         binging.reset.setOnClickListener {
-            visualAnimator.resetSort()
+            animator.resetSort()
         }
-
         // 选择排序
         binging.selectionSort.setOnClickListener {
-            visualAnimator.selectionSort(a)
+            animator.selectionSort(a)
         }
-
         // 冒泡排序
         binging.bubbleSort.setOnClickListener {
-            visualAnimator.bubbleSort(a)
+            animator.bubbleSort(a)
+        }
+        // 插入排序
+        binging.insertionSort.setOnClickListener {
+            animator.insertionSort(a)
         }
     }
 }

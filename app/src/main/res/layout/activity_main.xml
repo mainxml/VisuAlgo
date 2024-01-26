@@ -15,6 +15,42 @@
         tools:context=".MainActivity"
         tools:ignore="HardcodedText" >
 
+        <com.google.android.flexbox.FlexboxLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="parent"
+            app:flexWrap="wrap">
+
+            <Button
+                android:id="@+id/reset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="重置排序"
+                android:layout_marginStart="8dp" />
+
+            <Button
+                android:id="@+id/selection_sort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="选择排序"
+                android:layout_marginStart="8dp" />
+
+            <Button
+                android:id="@+id/bubble_sort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="冒泡排序"
+                android:layout_marginStart="8dp" />
+
+            <Button
+                android:id="@+id/insertion_sort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="插入排序"
+                android:layout_marginStart="8dp" />
+
+        </com.google.android.flexbox.FlexboxLayout>
+
         <com.mainxml.visualgo.widget.VisualArray
             android:id="@+id/array"
             android:layout_width="wrap_content"
@@ -23,33 +59,6 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
-
-        <Button
-            android:id="@+id/reset"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="重置"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginStart="8dp" />
-
-        <Button
-            android:id="@+id/selection_sort"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="选择排序"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/reset"
-            android:layout_marginStart="8dp"/>
-
-        <Button
-            android:id="@+id/bubble_sort"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="冒泡排序"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/selection_sort"
-            android:layout_marginStart="8dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

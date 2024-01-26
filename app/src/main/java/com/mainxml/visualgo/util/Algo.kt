@@ -5,70 +5,74 @@ package com.mainxml.visualgo.util
  */
 
 /**
- * 交换两个位置的回调，左边参数要小于右边参数
+ * 一个位置变动的回调
  */
-typealias onSwap = (Int, Int) -> Unit
+typealias OneIndexCallback = (Int) -> Unit
+
+/**
+ * 两个位置变动的回调，左边参要小于右边参数
+ */
+typealias TwoIndexCallback = (Int, Int) -> Unit
 
 /**
  * 算法
+ *
+ * 从小到大排序，修改比较符号可实现倒序。
  */
 object Algo {
 
     /**
      * 选择排序
      * ```
-     * 从小到大排序，改变比较符号可以反过来。
-     * 将输入列表分成【未排序】和【已排序】两个区，
-     * 循环的从未排序区间再循环的选择最小的元素，将其放到已排序区间的末尾。
-     *
-     * 1. 初始状态下，所有元素未排序，即未排序区间为[0 .. n - 1]
-     * 2. 选取区间[0 .. n - 1]中的最小元素，将其与索引 0 处的元素交换。完成后，数组前 1 个元素已排序。
-     * 3. 选取区间[1 .. n - 1]中的最小元素，将其与索引 1 处的元素交换。完成后，数组前 2 个元素已排序。
-     * 4. 以此类推。经过 n - 1 轮选择与交换后，数组前个 n - 1 个元素已排序。
-     * 5. 仅剩的一个元素必定是最大元素，无须排序，因此数组排序完成。
+     * 循环连续地从未排序区间选择最小的元素，将其与未排序区间开头元素交换并成为已排序区间的末尾，
+     * 最多 n - 1 轮完成排序。
      *
      * 时间复杂度为 O(n^2)、非自适应排序、非稳定排序
      * ```
      * @param a IntArray
-     * @param onSwap onSwap
+     * @param onSwap TwoIndexCallback
      */
-    fun selectionSort(a: IntArray, onSwap: onSwap) {
+    fun selectionSort(a: IntArray, onSwap: TwoIndexCallback) {
         val n = a.size
-        // 外循环：未排序区间为[i, n - 1]。
-        // 排序到仅剩时一个元素必定是最大元素，无须排序，因此循环次数可以少一次。i ∈ [0, n - 2]
+        // 初始已排序区间为空，未排序区间为[0, n - 1]
+        // 外循环：未排序区间为[i, n - 1]
         for (i in 0..< n - 1) {
-            // 内循环：找到未排序区间内的最小元素
-            var k = i
+            var m = i
+            // 内循环：寻找未排序区间的最小元素
             for (j in i + 1..< n) {
-                if (a[j] < a[k]) {
-                    k = j
+                if (a[j] < a[m]) {
+                    m = j
                 }
             }
-            if (i == k) {
+            if (i == m) {
                 continue
             }
             val tmp = a[i]
-            a[i] = a[k]
-            a[k] = tmp
+            a[i] = a[m]
+            a[m] = tmp
 
-            onSwap(i, k)
+            onSwap(i, m)
         }
     }
 
     /**
      * 冒泡排序
      * ```
-     * 从小到大排序，改变比较符号可以反过来。
-     * 连续地比较与交换相邻元素，一轮结束时最右侧的元素最大，最多 n - 1 轮保证数组完成排序。
+     * 循环连续地比较相邻元素，符合条件就交换，每轮结束时最右侧的元素最大，
+     * 最多 n - 1 轮完成排序。
+     *
+     * 时间复杂度为 O(n^2)、自适应排序、稳定排序
      * ```
      * @param a IntArray
-     * @param onSwap onSwap
+     * @param onSwap TwoIndexCallback
      */
-    fun bubbleSort(a: IntArray, onSwap: onSwap) {
-        // 循环 n - 1 次，因为每轮最右侧元素最大，所以递减 1 来对二级循环做右界
-        for (i in a.lastIndex downTo 1) {
+    fun bubbleSort(a: IntArray, onSwap: TwoIndexCallback) {
+        val n = a.size
+        // 外循环：未排序区间为[0, n - 1]
+        // 因为每轮结束时最右侧元素最大，所以倒序递减来对内循环做右界
+        for (i in n - 1 downTo 1) {
+            // 内循环：比较相邻元素，符合条件就交换
             for (j in 0 ..< i) {
-                // 比较与交换相邻元素
                 if (a[j] > a[j + 1]) {
                     val tmp = a[j]
                     a[j] = a[j + 1]
@@ -80,5 +84,45 @@ object Algo {
         }
     }
 
+    /**
+     * 插入排序
+     * ```
+     * 工作原理与手动整理一副牌的过程相似，
+     * 在未排序区间选择一个基准元素，将该元素与其左侧已排序区间的元素逐一比较大小，并将该元素插入到正确的位置。
+     *
+     * 时间复杂度为 O(n^2)、自适应排序、稳定排序
+     * ```
+     * @param a IntArray
+     * @param onUp OneIndexCallback
+     * @param onMove TwoIndexCallback
+     * @param onDown OneIndexCallback
+     */
+    fun insertionSort(
+        a: IntArray,
+        onUp: OneIndexCallback,
+        onMove: TwoIndexCallback,
+        onDown: OneIndexCallback,
+    ) {
+        val n = a.size
+        // 初始已排序区间为[0]，未排序区间为[1, n - 1]
+        // 外循环：未排序区间为[i, n - 1]
+        for (i in 1 ..< n) {
+            val base = a[i]
+            var j = i - 1
+            onUp(i)
+
+            // 内循环：将 base 插入到已排序部分的正确位置
+            while (j >= 0 && a[j] > base) {
+                onMove(j, j + 1)
+
+                a[j + 1] = a[j]
+                --j
+            }
+            a[j + 1] = base
+
+            onMove(i, j + 1)
+            onDown(i)
+        }
+    }
 }
 

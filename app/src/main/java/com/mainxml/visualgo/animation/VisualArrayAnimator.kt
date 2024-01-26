@@ -3,17 +3,19 @@ package com.mainxml.visualgo.animation
 import android.animation.Animator
 import android.animation.AnimatorSet
 import com.mainxml.visualgo.util.Algo
+import com.mainxml.visualgo.util.TwoIndexCallback
+import com.mainxml.visualgo.util.OneIndexCallback
 import com.mainxml.visualgo.widget.VisualArray
 import com.mainxml.visualgo.widget.VisualElement
 import java.util.LinkedList
 import java.util.Queue
 
 /**
- * 组织和管理动画
+ * 组织管理和调度数组动画
  * @param viewGroup VisualArray
  * @author zcp
  */
-class VisualAnimator(private val viewGroup: VisualArray) {
+class VisualArrayAnimator(private val viewGroup: VisualArray) {
 
     /** 动画队列 */
     private val animatorQueue: Queue<LazyAnimator> = LinkedList()
@@ -49,12 +51,8 @@ class VisualAnimator(private val viewGroup: VisualArray) {
      */
     fun selectionSort(a: IntArray) {
         initSort(a)
-        viewGroup.post {
-            Algo.selectionSort(sortedArray, onSwap = { i, j ->
-                animatorQueue.offer(LazyAnimator(listOf(i, j), ::swap))
-            })
-            play()
-        }
+        Algo.selectionSort(sortedArray, onSwap)
+        play()
     }
 
     /**
@@ -63,12 +61,18 @@ class VisualAnimator(private val viewGroup: VisualArray) {
      */
     fun bubbleSort(a: IntArray) {
         initSort(a)
-        viewGroup.post {
-            Algo.bubbleSort(sortedArray, onSwap = { i, j ->
-                animatorQueue.offer(LazyAnimator(listOf(i, j), ::swap))
-            })
-            play()
-        }
+        Algo.bubbleSort(sortedArray, onSwap)
+        play()
+    }
+
+    /**
+     * 插入排序
+     * @param a IntArray
+     */
+    fun insertionSort(a: IntArray) {
+        initSort(a)
+        Algo.insertionSort(sortedArray, onUp, onMove, onDown)
+        play()
     }
 
     /**
@@ -78,6 +82,26 @@ class VisualAnimator(private val viewGroup: VisualArray) {
         if (::originArray.isInitialized) {
             initSort(originArray)
         }
+    }
+
+    /** 算法对元素交换的回调 */
+    private val onSwap: TwoIndexCallback = { i, j ->
+        animatorQueue.offer(LazyAnimator(listOf(i, j), ::swap))
+    }
+
+    /** 算法对元素抬起的回调 */
+    private val onUp: OneIndexCallback = { i ->
+        animatorQueue.offer(LazyAnimator(listOf(i), ::up))
+    }
+
+    /** 算法对元素移动的回调 */
+    private val onMove: TwoIndexCallback = { i, j ->
+        animatorQueue.offer(LazyAnimator(listOf(i, j), ::move))
+    }
+
+    /** 算法对元素下降的回调 */
+    private val onDown: OneIndexCallback = { i ->
+        animatorQueue.offer(LazyAnimator(listOf(i), ::down))
     }
 
     /**
@@ -100,13 +124,16 @@ class VisualAnimator(private val viewGroup: VisualArray) {
         }
     }
 
+    /**
+     * 播放动画
+     */
     private fun play() {
         val listener = object : AnimatorListenerImp() {
             override fun onAnimationEnd(animation: Animator) {
                 animation.removeAllListeners()
                 val self = this
                 animatorQueue.poll()?.apply {
-                    swap(indexes).apply {
+                    create(indexes).apply {
                         playingAnimator = this
                         addListener(self)
                         start()
@@ -114,11 +141,13 @@ class VisualAnimator(private val viewGroup: VisualArray) {
                 }
             }
         }
-        animatorQueue.poll()?.apply {
-            swap(indexes).apply {
-                playingAnimator = this
-                addListener(listener)
-                start()
+        viewGroup.post {
+            animatorQueue.poll()?.apply {
+                create(indexes).apply {
+                    playingAnimator = this
+                    addListener(listener)
+                    start()
+                }
             }
         }
     }
@@ -142,7 +171,6 @@ class VisualAnimator(private val viewGroup: VisualArray) {
 
         // 合成动画
         val animator: Animator
-
         viewGroup.apply {
             animator = playSequentially(
                 playTogether(select(vi), select(vj)),
@@ -155,6 +183,43 @@ class VisualAnimator(private val viewGroup: VisualArray) {
         // 更新映射下标
         viewIndexMap[i] = vj
         viewIndexMap[j] = vi
+
+        return animator
+    }
+
+    private fun up(indexes: List<Int>): Animator {
+        if (indexes.size != 1) {
+            throw IllegalArgumentException()
+        }
+
+        val i = indexes[0]
+        val vi = getViewIndex(i)
+        return viewGroup.up(vi, false)
+    }
+
+    private fun down(indexes: List<Int>): Animator {
+        if (indexes.size != 1) {
+            throw IllegalArgumentException()
+        }
+
+        val i = indexes[0]
+        val vi = getViewIndex(i)
+        return viewGroup.down(vi)
+    }
+
+    private fun move(indexes: List<Int>): Animator {
+        if (indexes.size != 2) {
+            throw IllegalArgumentException()
+        }
+
+        val i = indexes[0]
+        val j = indexes[1]
+        val vi = getViewIndex(i)
+        val vj = getViewIndex(j)
+
+        val animator = viewGroup.move(vi, i - j)
+
+        viewIndexMap[i] = vj
 
         return animator
     }
