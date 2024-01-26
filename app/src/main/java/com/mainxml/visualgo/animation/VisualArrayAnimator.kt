@@ -17,26 +17,6 @@ import java.util.Queue
  */
 class VisualArrayAnimator(private val viewGroup: VisualArray) {
 
-    /** 动画队列 */
-    private val animatorQueue: Queue<LazyAnimator> = LinkedList()
-
-    /** 播放中的动画 */
-    private var playingAnimator: Animator? = null
-
-    /**
-     * 算法下标对子View实际下标的映射。
-     *
-     * 动画移动子View时并没有实际改变子View在ViewGroup中的index，
-     * 所以对子View进行动画时需要映射到其实际下标。
-     */
-    private val viewIndexMap = mutableMapOf<Int, Int>()
-
-    /** 原数组 */
-    private lateinit var originArray: IntArray
-
-    /** 已排序数组 */
-    private lateinit var sortedArray: IntArray
-
     /**
      * 显示一个静态数组
      * @param a IntArray
@@ -84,25 +64,25 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
         }
     }
 
-    /** 算法对元素交换的回调 */
-    private val onSwap: TwoIndexCallback = { i, j ->
-        animatorQueue.offer(LazyAnimator(listOf(i, j), ::swap))
-    }
+    /** 动画队列 */
+    private val animatorQueue: Queue<LazyAnimator> = LinkedList()
 
-    /** 算法对元素抬起的回调 */
-    private val onUp: OneIndexCallback = { i ->
-        animatorQueue.offer(LazyAnimator(listOf(i), ::up))
-    }
+    /** 播放中的动画 */
+    private var playingAnimator: Animator? = null
 
-    /** 算法对元素移动的回调 */
-    private val onMove: TwoIndexCallback = { i, j ->
-        animatorQueue.offer(LazyAnimator(listOf(i, j), ::move))
-    }
+    /**
+     * 算法下标对子View实际下标的映射。
+     *
+     * 因为动画移动子View时并没有实际改变子View在ViewGroup中的index，
+     * 所以对子View进行动画时需要映射到其实际下标。
+     */
+    private val viewIndexMap = mutableMapOf<Int, Int>()
 
-    /** 算法对元素下降的回调 */
-    private val onDown: OneIndexCallback = { i ->
-        animatorQueue.offer(LazyAnimator(listOf(i), ::down))
-    }
+    /** 原数组 */
+    private lateinit var originArray: IntArray
+
+    /** 已排序数组 */
+    private lateinit var sortedArray: IntArray
 
     /**
      * 初始化数组和动画
@@ -224,6 +204,26 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
         return animator
     }
 
+    /** 算法对元素交换的回调 */
+    private val onSwap: TwoIndexCallback = { i, j ->
+        animatorQueue.offer(LazyAnimator(listOf(i, j), ::swap))
+    }
+
+    /** 算法对元素抬起的回调 */
+    private val onUp: OneIndexCallback = { i ->
+        animatorQueue.offer(LazyAnimator(listOf(i), ::up))
+    }
+
+    /** 算法对元素下降的回调 */
+    private val onDown: OneIndexCallback = { i ->
+        animatorQueue.offer(LazyAnimator(listOf(i), ::down))
+    }
+
+    /** 算法对元素移动的回调 */
+    private val onMove: TwoIndexCallback = { i, j ->
+        animatorQueue.offer(LazyAnimator(listOf(i, j), ::move))
+    }
+
     private fun playSequentially(vararg animators: Animator): Animator {
         return AnimatorSet().apply {
             playSequentially(*animators)
@@ -237,5 +237,4 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
     }
 
     private fun getViewIndex(i: Int) = viewIndexMap[i] as Int
-
 }
