@@ -22,6 +22,8 @@ class VisualArray @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr) {
 
+    // region 测量布局绘制
+
     /** 边框Padding */
     private val edgePadding = if (isInEditMode) 12 else 4.dp
     /** 边框圆角值 */
@@ -126,9 +128,9 @@ class VisualArray @JvmOverloads constructor(
         canvas.drawRoundRect(l, t, r, b, corner, corner, paint)
     }
 
-    // -------------------------------------------------------------------------------
-    // -------------------------------- 动画相关方法 -----------------------------------
-    // -------------------------------------------------------------------------------
+    // endregion
+
+    // region 动画相关方法
 
     /**
      * 垂直向上动画
@@ -151,6 +153,20 @@ class VisualArray @JvmOverloads constructor(
     }
 
     /**
+     * 垂直向下动画
+     * @param index Int ChildView下标
+     * @return Animator
+     */
+    fun down(index: Int): Animator {
+        val child = getElementView(index)
+        val propertyName = "y"
+        val pair = child.tag as Pair<*, *>
+        val start = pair.second as Float
+        val end = pair.first as Float
+        return ObjectAnimator.ofFloat(child, propertyName, start, end)
+    }
+
+    /**
      * 水平动画
      * @param index Int ChildView下标
      * @param movedCount Int 向左移动为正，向右移动为负
@@ -166,26 +182,21 @@ class VisualArray @JvmOverloads constructor(
     }
 
     /**
-     * 垂直向下动画
-     * @param index Int ChildView下标
-     * @return Animator
-     */
-    fun down(index: Int): Animator {
-        val child = getElementView(index)
-        val propertyName = "y"
-        val pair = child.tag as Pair<*, *>
-        val start = pair.second as Float
-        val end = pair.first as Float
-        return ObjectAnimator.ofFloat(child, propertyName, start, end)
-    }
-
-    /**
      * 选中动画，渐变为橙色
      * @param index Int ChildView下标
      * @return Animator
      */
     fun select(index: Int) : Animator {
         return gradient(index, MyColor.ORANGE)
+    }
+
+    /**
+     * 取消选中动画，渐变回绿色
+     * @param index Int ChildView下标
+     * @return Animator
+     */
+    fun unselect(index: Int) : Animator {
+        return gradient(index, MyColor.PURPLE)
     }
 
     /**
@@ -205,4 +216,6 @@ class VisualArray @JvmOverloads constructor(
     }
 
     private fun getElementView(index: Int) = get(index) as VisualElement
+
+    // endregion
 }

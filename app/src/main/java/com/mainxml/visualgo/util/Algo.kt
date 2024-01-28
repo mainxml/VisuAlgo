@@ -1,7 +1,5 @@
 package com.mainxml.visualgo.util
 
-import java.util.Collections.swap
-
 /**
  * @author zcp
  */
@@ -57,7 +55,7 @@ object Algo {
     }
 
     /**
-     * 冒泡排序 TODO FLAG
+     * 冒泡排序
      * ```
      * 循环连续地比较相邻元素，符合条件就交换，每轮结束时最右侧的元素最大，
      * 最多 n - 1 轮完成排序。
@@ -124,7 +122,7 @@ object Algo {
     }
 
     /**
-     * 快速排序 TODO 有问题
+     * 快速排序
      * 关于方向问题：从基准对向开始
      */
     fun quickSort(a: IntArray, left: Int, right: Int, onSwap: TwoIndexCallback) {
@@ -150,7 +148,7 @@ object Algo {
         }
         // 此时 i == j，和基准位置交换，基准值归位
         swap(a, left, i)
-        onSwap(i, j)
+        onSwap(left, i)
 
         // 对基准值左子数组排序
         quickSort(a, left, i - 1, onSwap)

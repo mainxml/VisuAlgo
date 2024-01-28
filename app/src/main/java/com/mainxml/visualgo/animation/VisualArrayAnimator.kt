@@ -172,7 +172,8 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
                 playTogether(select(vi), select(vj)),
                 playTogether(up(vi, true), up(vj, false)),
                 playTogether(move(vi, i - j), move(vj, j - i)),
-                playTogether(down(vi), down(vj))
+                playTogether(down(vi), down(vj)),
+                playTogether(unselect(vi), unselect(vj))
             )
         }
 
@@ -193,7 +194,7 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
 
     /**
      * 升起一个元素
-     * @param indexes List<Int> 第一个参数表示位置，第二个参数表示是否在空中停留(0:false; 1:true)
+     * @param indexes List<Int> 第一个参数表示位置，第二个参数表示是否在空中停留
      * @return Animator
      */
     private fun up(indexes: List<Int>): Animator {
@@ -214,7 +215,7 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
     }
 
     /**
-     * 降下一个元素
+     * 下降一个元素
      * @param indexes List<Int>
      * @return Animator
      */
@@ -237,7 +238,7 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
 
     /**
      * 移动一个位置的元素到另一个位置
-     * @param indexes List<Int> 前两个参数表示位置，第三个参数表示是否移动在空中停留的元素(0:false; 1:true)
+     * @param indexes List<Int> 前两个参数表示位置，第三个参数表示是否移动在空中停留的那个元素
      * @return Animator
      */
     private fun move(indexes: List<Int>): Animator {
