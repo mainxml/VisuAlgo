@@ -5,6 +5,7 @@ import android.animation.AnimatorSet
 import com.mainxml.visualgo.util.Algo
 import com.mainxml.visualgo.util.TwoIndexCallback
 import com.mainxml.visualgo.util.OneIndexCallback
+import com.mainxml.visualgo.util.ThreeIndexCallback
 import com.mainxml.visualgo.widget.VisualArray
 import com.mainxml.visualgo.widget.VisualElement
 import java.util.LinkedList
@@ -52,6 +53,16 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
     fun insertionSort(a: IntArray) {
         initSort(a)
         Algo.insertionSort(sortedArray, onUp, onMove, onDown)
+        play()
+    }
+
+    /**
+     * 快速排序
+     * @param a IntArray
+     */
+    fun quickSort(a: IntArray) {
+        initSort(a)
+        Algo.quickSort(sortedArray, 0, sortedArray.lastIndex, onSwap)
         play()
     }
 
@@ -132,6 +143,11 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
         }
     }
 
+    /** 算法对元素交换的回调 */
+    private val onSwap: TwoIndexCallback = { i, j ->
+        animatorQueue.offer(LazyAnimator(listOf(i, j), ::swap))
+    }
+
     /**
      * 交换两个元素
      * @param indexes: List<Int>
@@ -167,51 +183,29 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
         return animator
     }
 
-    private fun up(indexes: List<Int>): Animator {
-        if (indexes.size != 1) {
-            throw IllegalArgumentException()
-        }
-
-        val i = indexes[0]
-        val vi = getViewIndex(i)
-        return viewGroup.up(vi, false)
-    }
-
-    private fun down(indexes: List<Int>): Animator {
-        if (indexes.size != 1) {
-            throw IllegalArgumentException()
-        }
-
-        val i = indexes[0]
-        val vi = getViewIndex(i)
-        return viewGroup.down(vi)
-    }
-
-    private fun move(indexes: List<Int>): Animator {
-        if (indexes.size != 2) {
-            throw IllegalArgumentException()
-        }
-
-        val i = indexes[0]
-        val j = indexes[1]
-        val vi = getViewIndex(i)
-        val vj = getViewIndex(j)
-
-        val animator = viewGroup.move(vi, i - j)
-
-        viewIndexMap[i] = vj
-
-        return animator
-    }
-
-    /** 算法对元素交换的回调 */
-    private val onSwap: TwoIndexCallback = { i, j ->
-        animatorQueue.offer(LazyAnimator(listOf(i, j), ::swap))
-    }
+    /** 停留在空中的View的位置 */
+    private var stayViewIndex = -1
 
     /** 算法对元素抬起的回调 */
-    private val onUp: OneIndexCallback = { i ->
-        animatorQueue.offer(LazyAnimator(listOf(i), ::up))
+    private val onUp: TwoIndexCallback = { i, stay ->
+        animatorQueue.offer(LazyAnimator(listOf(i, stay), ::up))
+    }
+
+    /**
+     * 升起一个元素
+     * @param indexes List<Int> 第一个参数表示位置，第二个参数表示是否在空中停留(0:false; 1:true)
+     * @return Animator
+     */
+    private fun up(indexes: List<Int>): Animator {
+        val i = indexes[0]
+        val vi = getViewIndex(i)
+
+        val isStay = indexes[1]
+        if (isStay == 1) {
+            stayViewIndex = vi
+        }
+
+        return viewGroup.up(vi, false)
     }
 
     /** 算法对元素下降的回调 */
@@ -219,9 +213,45 @@ class VisualArrayAnimator(private val viewGroup: VisualArray) {
         animatorQueue.offer(LazyAnimator(listOf(i), ::down))
     }
 
+    /**
+     * 降下一个元素
+     * @param indexes List<Int>
+     * @return Animator
+     */
+    private fun down(indexes: List<Int>): Animator {
+        val i = indexes[0]
+        val vi: Int
+        if (stayViewIndex != -1) {
+            vi = stayViewIndex
+            stayViewIndex = -1
+        } else {
+            vi = getViewIndex(i)
+        }
+        return viewGroup.down(vi)
+    }
+
     /** 算法对元素移动的回调 */
-    private val onMove: TwoIndexCallback = { i, j ->
-        animatorQueue.offer(LazyAnimator(listOf(i, j), ::move))
+    private val onMove: ThreeIndexCallback = { i, j, b ->
+        animatorQueue.offer(LazyAnimator(listOf(i, j, b), ::move))
+    }
+
+    /**
+     * 移动一个位置的元素到另一个位置
+     * @param indexes List<Int> 前两个参数表示位置，第三个参数表示是否移动在空中停留的元素(0:false; 1:true)
+     * @return Animator
+     */
+    private fun move(indexes: List<Int>): Animator {
+        val i = indexes[0]
+        val j = indexes[1]
+        val isStay = indexes[2]
+        val vi = if (isStay == 1) {
+             stayViewIndex
+        } else {
+            getViewIndex(i)
+        }
+        val animator = viewGroup.move(vi, i - j)
+        viewIndexMap[j] = vi
+        return animator
     }
 
     private fun playSequentially(vararg animators: Animator): Animator {

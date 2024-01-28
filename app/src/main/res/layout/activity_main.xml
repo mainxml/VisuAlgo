@@ -49,6 +49,13 @@
                 android:text="插入排序"
                 android:layout_marginStart="8dp" />
 
+            <Button
+                android:id="@+id/quick_sort"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="快速排序"
+                android:layout_marginStart="8dp" />
+
         </com.google.android.flexbox.FlexboxLayout>
 
         <com.mainxml.visualgo.widget.VisualArray
