@@ -1,7 +1,5 @@
 package com.mainxml.visualgo.util
 
-import java.util.Collections.swap
-
 /**
  * @author zcp
  */

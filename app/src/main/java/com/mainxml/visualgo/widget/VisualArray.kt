@@ -29,9 +29,11 @@ class VisualArray @JvmOverloads constructor(
     private val corner = 0f
     /** 元素Padding */
     private val elementPadding = if (isInEditMode) 6 else 2.dp
+    /** 画笔线宽 */
+    private val strokeWidth = if (isInEditMode) 6f else 2.dp.toFloat()
 
     /** 高度扩大倍速, 用于留空区域显示动画 */
-    private val heightMultiple = 5
+    private val heightMultiple = 4
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
@@ -41,7 +43,7 @@ class VisualArray @JvmOverloads constructor(
 
         paint.color = MyColor.GREEN
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = if (isInEditMode) 12f else 4.dp.toFloat()
+        paint.strokeWidth = strokeWidth
     }
 
     /**
@@ -62,14 +64,14 @@ class VisualArray @JvmOverloads constructor(
         val heightSpecMode = MeasureSpec.getMode(heightMeasureSpec)
 
         val resolveWidth = if (widthSpecMode == MeasureSpec.AT_MOST) {
-            // 当宽为wrap_content时,计算全部子View宽度之和
-            var w = 0
+            // 当宽为wrap_content时，计算全部子View宽度之和
+            var widthSum = 0
             children.forEach { child ->
-                w += child.measuredWidth + elementPadding
+                widthSum += child.measuredWidth + elementPadding
             }
-            w -= elementPadding
+            widthSum -= elementPadding
             // 防止宽度超过父ViewGroup限制
-            resolveSize(w, widthMeasureSpec)
+            resolveSize(widthSum, widthMeasureSpec)
         } else {
             // 否则使用父方法
             getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
@@ -77,15 +79,15 @@ class VisualArray @JvmOverloads constructor(
 
         val resolveHeight = if (heightSpecMode == MeasureSpec.AT_MOST) {
             // 当高为wrap_content时，寻找子View中的最大高度
-            var h = 0
+            var heightSum = 0
             children.forEach { child ->
-                if (child.measuredHeight > h) {
-                    h = child.measuredHeight
+                if (child.measuredHeight > heightSum) {
+                    heightSum = child.measuredHeight
                 }
             }
-            h *= heightMultiple // 额外加大五倍用于动画
+            heightSum *= heightMultiple // 额外加大五倍用于动画
             // 防止高度超过父ViewGroup限制
-            resolveSize(h, heightMeasureSpec)
+            resolveSize(heightSum, heightMeasureSpec)
         } else {
             // 否则使用父方法
             getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
@@ -106,7 +108,6 @@ class VisualArray @JvmOverloads constructor(
             val cw = child.measuredWidth
             val ch = child.measuredHeight
             val cl = edgePadding + left
-            //val ct = innerPadding
             val ct = height - edgePadding - (height - 2 * edgePadding) / heightMultiple
             val cr = cl + cw
             val cb = ct + ch
@@ -120,10 +121,10 @@ class VisualArray @JvmOverloads constructor(
      */
     override fun onDraw(canvas: Canvas) {
         // 画边框
-        val l = paddingLeft.toFloat()
-        val t = paddingTop.toFloat()
-        val r = (paddingLeft + width).toFloat()
-        val b = (paddingTop + height).toFloat()
+        val l = paddingLeft.toFloat() + strokeWidth / 2
+        val t = height.toFloat() - edgePadding - edgePadding - get(0).height + strokeWidth / 2
+        val r = (paddingLeft + width).toFloat() - strokeWidth / 2
+        val b = (paddingTop + height).toFloat() - strokeWidth / 2
         canvas.drawRoundRect(l, t, r, b, corner, corner, paint)
     }
     // endregion

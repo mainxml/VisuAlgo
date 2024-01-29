@@ -42,8 +42,8 @@ class VisualElement @JvmOverloads constructor(
      * 只需为wrap_content时提供默认大小。
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        /* // 设置固定大小时可直接用setMeasuredDimension()，resolveSize()方法可以防止大小超出父类
-        val measuredWidth = resolveSize(defaultSize, widthMeasureSpec)
+        // 设置固定大小时可直接用setMeasuredDimension()，resolveSize()方法可以防止大小超出父类
+        /* val measuredWidth = resolveSize(defaultSize, widthMeasureSpec)
         val measuredHeight = resolveSize(defaultSize, heightMeasureSpec)
         setMeasuredDimension(measuredWidth, measuredHeight) */
 
