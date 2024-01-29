@@ -18,6 +18,29 @@ class VisualElement @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
+    companion object {
+        private const val POINT = -1
+
+        /**
+         * 创建元素
+         * @param context Context
+         * @param value Int
+         * @return VisualElement
+         */
+        fun create(context: Context, value: Int): VisualElement {
+            return VisualElement(context).apply { this.value = value }
+        }
+
+        /**
+         * 创建指示元素位置的元素
+         * @param context Context
+         * @return VisualElement
+         */
+        fun createPoint(context: Context, name: String): VisualElement {
+            return create(context, POINT).apply { this.pointName = name }
+        }
+    }
+
     /** 元素的值 */
     var value: Int = 0
 
@@ -29,9 +52,14 @@ class VisualElement @JvmOverloads constructor(
             invalidate()
         }
 
+    /** 指针元素名称，当为指针元素类型时才有值 */
+    private var pointName = ""
+
+    /** 是否为指针元素 */
+    fun isPoint() = value == POINT
+
     private val defaultSize: Int = if (isInEditMode) 72 else 24.dp
     private val textSize: Float = if (isInEditMode) 42f else 14.dp.toFloat()
-
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rectF = RectF()
     private val fontMetrics = paint.fontMetrics
@@ -97,7 +125,7 @@ class VisualElement @JvmOverloads constructor(
         canvas.drawRect(rectF, paint)
 
         // 绘制文字
-        val text = value.toString()
+        val text = if (value == POINT) pointName else value.toString()
         paint.textSize = textSize
         paint.color = MyColor.WHITE
         val textWidth = paint.measureText(text)

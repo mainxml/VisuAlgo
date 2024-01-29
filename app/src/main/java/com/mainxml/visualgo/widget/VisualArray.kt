@@ -25,15 +25,15 @@ class VisualArray @JvmOverloads constructor(
     // region 测量布局绘制
     /** 边框Padding */
     private val edgePadding = if (isInEditMode) 12 else 4.dp
-    /** 边框圆角值 */
-    private val corner = 0f
     /** 元素Padding */
     private val elementPadding = if (isInEditMode) 6 else 2.dp
+    /** 边框圆角值 */
+    private val corner = 0f
     /** 画笔线宽 */
-    private val strokeWidth = if (isInEditMode) 6f else 2.dp.toFloat()
+    private val strokeWidth = if (isInEditMode) 6 else 2.dp
 
     /** 高度扩大倍速, 用于留空区域显示动画 */
-    private val heightMultiple = 4
+    private val heightMultiple = 5
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
@@ -43,7 +43,7 @@ class VisualArray @JvmOverloads constructor(
 
         paint.color = MyColor.GREEN
         paint.style = Paint.Style.STROKE
-        paint.strokeWidth = strokeWidth
+        paint.strokeWidth = strokeWidth.toFloat()
     }
 
     /**
@@ -59,42 +59,50 @@ class VisualArray @JvmOverloads constructor(
         // 遍历测量全部子View
         measureChildren(widthMeasureSpec, heightMeasureSpec)
 
-        // 根据子View决定自身宽高
         val widthSpecMode = MeasureSpec.getMode(widthMeasureSpec)
         val heightSpecMode = MeasureSpec.getMode(heightMeasureSpec)
 
-        val resolveWidth = if (widthSpecMode == MeasureSpec.AT_MOST) {
-            // 当宽为wrap_content时，计算全部子View宽度之和
-            var widthSum = 0
+        // 当宽为wrap_content时，计算全部子View宽度之和
+        val width = if (widthSpecMode == MeasureSpec.AT_MOST) {
+            var sum = 0
             children.forEach { child ->
-                widthSum += child.measuredWidth + elementPadding
+                child as VisualElement
+                // 指针元素绘制在下方，不参与宽度计算
+                if (child.isPoint()) {
+                    return@forEach
+                }
+                sum += child.measuredWidth + elementPadding
             }
-            widthSum -= elementPadding
+            sum -= elementPadding
             // 防止宽度超过父ViewGroup限制
-            resolveSize(widthSum, widthMeasureSpec)
+            resolveSize(sum, widthMeasureSpec)
         } else {
-            // 否则使用父方法
+            // 否则使用超类方法
             getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
         } + 2 * edgePadding
 
-        val resolveHeight = if (heightSpecMode == MeasureSpec.AT_MOST) {
-            // 当高为wrap_content时，寻找子View中的最大高度
-            var heightSum = 0
+        // 当高为wrap_content时，寻找子View中的最大高度
+        val height = if (heightSpecMode == MeasureSpec.AT_MOST) {
+            var sum = 0
             children.forEach { child ->
-                if (child.measuredHeight > heightSum) {
-                    heightSum = child.measuredHeight
+                child as VisualElement
+                if (child.isPoint()) {
+                    return@forEach
+                }
+                if (child.measuredHeight > sum) {
+                    sum = child.measuredHeight
                 }
             }
-            heightSum *= heightMultiple // 额外加大五倍用于动画
+            sum *= heightMultiple // 额外加大指定倍数用于动画
             // 防止高度超过父ViewGroup限制
-            resolveSize(heightSum, heightMeasureSpec)
+            resolveSize(sum, heightMeasureSpec)
         } else {
             // 否则使用父方法
             getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
         } + 2 * edgePadding
 
         // 设置最终宽高，完成测量
-        setMeasuredDimension(resolveWidth, resolveHeight)
+        setMeasuredDimension(width, height)
     }
 
     /**
@@ -103,16 +111,32 @@ class VisualArray @JvmOverloads constructor(
      * 给子View布局位置
      */
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        var left = 0
+        var left = paddingLeft + edgePadding
+        var pointLeft = paddingLeft + edgePadding
+
         children.forEach { child ->
+            child as VisualElement
             val cw = child.measuredWidth
             val ch = child.measuredHeight
-            val cl = edgePadding + left
-            val ct = height - edgePadding - (height - 2 * edgePadding) / heightMultiple
+
+            // 在最下方绘制指针元素
+            if (child.isPoint()) {
+                val cl = pointLeft
+                val cr = cl + cw
+                val ct = height - edgePadding - child.measuredHeight
+                val cb = ct + ch
+                child.layout(cl, ct, cr, cb)
+                pointLeft = cr + elementPadding
+                return@forEach
+            }
+
+            // 绘制子元素
+            val cl = left
             val cr = cl + cw
+            val ct = height - 2 * edgePadding - elementPadding - 2 * child.measuredHeight
             val cb = ct + ch
             child.layout(cl, ct, cr, cb)
-            left += cw + elementPadding
+            left = cr + elementPadding
         }
     }
 
@@ -121,10 +145,11 @@ class VisualArray @JvmOverloads constructor(
      */
     override fun onDraw(canvas: Canvas) {
         // 画边框
-        val l = paddingLeft.toFloat() + strokeWidth / 2
-        val t = height.toFloat() - edgePadding - edgePadding - get(0).height + strokeWidth / 2
-        val r = (paddingLeft + width).toFloat() - strokeWidth / 2
-        val b = (paddingTop + height).toFloat() - strokeWidth / 2
+        val l = paddingLeft.toFloat() + strokeWidth / 2f
+        val r = width - paddingRight - strokeWidth / 2f
+        val maxChildHeight = (height - 2f * edgePadding) / heightMultiple
+        val t = (height - 3 * edgePadding - elementPadding - 2 * maxChildHeight) + strokeWidth / 2f
+        val b = t + edgePadding + maxChildHeight + elementPadding
         canvas.drawRoundRect(l, t, r, b, corner, corner, paint)
     }
     // endregion
@@ -142,9 +167,9 @@ class VisualArray @JvmOverloads constructor(
         val childHeight = child.height.toFloat()
         val start = child.y
         val end = start - if (onLeft) {
-            childHeight * (heightMultiple - 2) - elementPadding
+            childHeight * (heightMultiple - 3) - elementPadding
         } else {
-            childHeight * (heightMultiple - 1)
+            childHeight * (heightMultiple - 2)
         }
         child.tag = Pair(start, end)
         return ObjectAnimator.ofFloat(child, propertyName, start, end)

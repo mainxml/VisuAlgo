@@ -109,10 +109,14 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         sortedArray = a.clone()
         viewIndexMap.clear()
         a.forEachIndexed { index, value ->
-            val child = VisualElement(visualArray.context).also { it.value = value }
+            val child = VisualElement.create(visualArray.context, value)
             visualArray.addView(child)
             viewIndexMap[index] = index
         }
+
+        // 不参加排序， 用于指示下标位置的元素
+        visualArray.addView(VisualElement.createPoint(visualArray.context, "i"))
+        visualArray.addView(VisualElement.createPoint(visualArray.context, "j"))
     }
 
     /**
