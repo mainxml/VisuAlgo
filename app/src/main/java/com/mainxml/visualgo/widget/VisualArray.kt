@@ -23,7 +23,6 @@ class VisualArray @JvmOverloads constructor(
 ) : ViewGroup(context, attrs, defStyleAttr) {
 
     // region 测量布局绘制
-
     /** 边框Padding */
     private val edgePadding = if (isInEditMode) 12 else 4.dp
     /** 边框圆角值 */
@@ -127,18 +126,16 @@ class VisualArray @JvmOverloads constructor(
         val b = (paddingTop + height).toFloat()
         canvas.drawRoundRect(l, t, r, b, corner, corner, paint)
     }
-
     // endregion
 
     // region 动画相关方法
-
     /**
      * 垂直向上动画
      * @param index Int ChildView下标
      * @param onLeft Boolean Child view下标是否相对在左边
      * @return Animator
      */
-    fun up(index: Int, onLeft: Boolean): Animator {
+    fun up(index: Int, onLeft: Boolean = false): Animator {
         val child = get(index)
         val propertyName = "y"
         val childHeight = child.height.toFloat()
@@ -196,7 +193,7 @@ class VisualArray @JvmOverloads constructor(
      * @return Animator
      */
     fun unselect(index: Int) : Animator {
-        return gradient(index, MyColor.PURPLE)
+        return gradient(index, MyColor.GREEN)
     }
 
     /**
@@ -216,6 +213,5 @@ class VisualArray @JvmOverloads constructor(
     }
 
     private fun getElementView(index: Int) = get(index) as VisualElement
-
     // endregion
 }
