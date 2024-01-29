@@ -46,9 +46,6 @@ object Algo {
                     m = j
                 }
             }
-            if (i == m) {
-                continue
-            }
             swap(a, i, m)
             onSwap(i, m)
         }

@@ -156,7 +156,20 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         val vi = getViewIndex(i)
         val vj = getViewIndex(j)
 
-        // 合成动画
+        // 位置相等时只做渐变动画
+        if (i == j) {
+            visualArray.apply {
+                listOf(
+                    { playTogether(select(vi), select(vj)) },
+                    { playTogether(unselect(vi), unselect(vj)) }
+                ).forEach { creator ->
+                    animatorQueue.offer(creator)
+                }
+            }
+            return
+        }
+
+        // 位置不等时合成交换动画
         visualArray.apply {
             listOf(
                 { playTogether(select(vi), select(vj)) },
