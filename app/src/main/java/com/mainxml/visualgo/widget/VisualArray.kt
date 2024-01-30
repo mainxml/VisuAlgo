@@ -31,10 +31,8 @@ class VisualArray @JvmOverloads constructor(
     private val corner = 0f
     /** 画笔线宽 */
     private val strokeWidth = if (isInEditMode) 6 else 2.dp
-
     /** 高度扩大倍速, 用于留空区域显示动画 */
-    private val heightMultiple = 5
-
+    private val heightMultiple = 6
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     init {
@@ -67,8 +65,7 @@ class VisualArray @JvmOverloads constructor(
             var sum = 0
             children.forEach { child ->
                 child as VisualElement
-                // 指针元素绘制在下方，不参与宽度计算
-                if (child.isPoint()) {
+                if (child.type != VisualElement.Type.Element) {
                     return@forEach
                 }
                 sum += child.measuredWidth + elementPadding
@@ -86,7 +83,7 @@ class VisualArray @JvmOverloads constructor(
             var sum = 0
             children.forEach { child ->
                 child as VisualElement
-                if (child.isPoint()) {
+                if (child.type != VisualElement.Type.Element) {
                     return@forEach
                 }
                 if (child.measuredHeight > sum) {
@@ -99,7 +96,7 @@ class VisualArray @JvmOverloads constructor(
         } else {
             // 否则使用父方法
             getDefaultSize(suggestedMinimumHeight, heightMeasureSpec)
-        } + 2 * edgePadding
+        } + 5 * edgePadding
 
         // 设置最终宽高，完成测量
         setMeasuredDimension(width, height)
@@ -111,46 +108,71 @@ class VisualArray @JvmOverloads constructor(
      * 给子View布局位置
      */
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        var left = paddingLeft + edgePadding
-        var pointLeft = paddingLeft + edgePadding
+        var elementLeft = paddingLeft + edgePadding
+        var indexLeft = elementLeft
+        var pointLeft = elementLeft
+
+        val ch = maxChildHeight()
 
         children.forEach { child ->
             child as VisualElement
             val cw = child.measuredWidth
-            val ch = child.measuredHeight
 
-            // 在最下方绘制指针元素
-            if (child.isPoint()) {
-                val cl = pointLeft
-                val cr = cl + cw
-                val ct = height - edgePadding - child.measuredHeight
-                val cb = ct + ch
-                child.layout(cl, ct, cr, cb)
-                pointLeft = cr + elementPadding
-                return@forEach
+            when (child.type) {
+                VisualElement.Type.Element -> {
+                    // 在第三层绘制子元素
+                    val cl = elementLeft
+                    val cr = cl + cw
+                    val t1 = height - paddingBottom - edgePadding - ch
+                    val t2 = t1 - edgePadding - ch
+                    val t3 = t2 - edgePadding - ch - edgePadding
+                    val cb = t3 + ch
+                    child.layout(cl, t3, cr, cb)
+                    elementLeft = cr + elementPadding
+                }
+                VisualElement.Type.Index -> {
+                    // 在第二层绘制指针元素
+                    val cl = indexLeft
+                    val cr = cl + cw
+                    val t1 = height - paddingBottom - edgePadding - ch
+                    val t2 = t1 - edgePadding - ch
+                    val cb = t2 + ch
+                    child.layout(cl, t2, cr, cb)
+                    indexLeft = cr + elementPadding
+                }
+                VisualElement.Type.Point -> {
+                    // 在最下层绘制下标元素
+                    val cl = pointLeft
+                    val cr = cl + cw
+                    val t1 = height - paddingBottom - edgePadding - ch
+                    val cb = t1 + ch
+                    child.layout(cl, t1, cr, cb)
+                    pointLeft = cr + elementPadding
+                }
             }
-
-            // 绘制子元素
-            val cl = left
-            val cr = cl + cw
-            val ct = height - 2 * edgePadding - elementPadding - 2 * child.measuredHeight
-            val cb = ct + ch
-            child.layout(cl, ct, cr, cb)
-            left = cr + elementPadding
         }
     }
+
+    /**
+     * 获取最高的子View
+     * @return Int
+     */
+    private fun maxChildHeight() = (height - 5 * edgePadding) / heightMultiple
 
     /**
      * 绘制
      */
     override fun onDraw(canvas: Canvas) {
         // 画边框
-        val l = paddingLeft.toFloat() + strokeWidth / 2f
+        val l = paddingLeft + strokeWidth / 2f
         val r = width - paddingRight - strokeWidth / 2f
-        val maxChildHeight = (height - 2f * edgePadding) / heightMultiple
-        val t = (height - 3 * edgePadding - elementPadding - 2 * maxChildHeight) + strokeWidth / 2f
-        val b = t + edgePadding + maxChildHeight + elementPadding
-        canvas.drawRoundRect(l, t, r, b, corner, corner, paint)
+        val ch = maxChildHeight()
+        val t1 = height.toFloat() - paddingBottom - edgePadding - ch
+        val t2 = t1 - edgePadding - ch
+        val t3 = t2 - edgePadding - ch - edgePadding - edgePadding + strokeWidth / 2
+        val b = t3 + edgePadding + ch + edgePadding - strokeWidth / 2
+        canvas.drawRoundRect(l, t3, r, b, corner, corner, paint)
+        //canvas.drawColor("#80CCCCCC".toColorInt())
     }
     // endregion
 
@@ -167,9 +189,9 @@ class VisualArray @JvmOverloads constructor(
         val childHeight = child.height.toFloat()
         val start = child.y
         val end = start - if (onLeft) {
-            childHeight * (heightMultiple - 3) - elementPadding
+            childHeight * 3
         } else {
-            childHeight * (heightMultiple - 2)
+            childHeight * 2 - 2 * elementPadding
         }
         child.tag = Pair(start, end)
         return ObjectAnimator.ofFloat(child, propertyName, start, end)

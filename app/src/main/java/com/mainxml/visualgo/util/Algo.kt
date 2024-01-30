@@ -195,7 +195,7 @@ object Algo {
         mergeSort(a, left, mid)
         mergeSort(a, mid + 1, right)
 
-        // 归 | 合并阶段（最先执行时长度为 2
+        // 归 | 合并阶段（最先执行时长度为 2）
 
         // 准备一个临时数组来存储有序元素
         val sorted = IntArray(right - left + 1)

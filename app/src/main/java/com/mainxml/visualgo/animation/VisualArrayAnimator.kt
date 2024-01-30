@@ -108,15 +108,22 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         originArray = a
         sortedArray = a.clone()
         viewIndexMap.clear()
+
+        val c = visualArray.context
+
+        // 创建对应输入数组的元素
         a.forEachIndexed { index, value ->
-            val child = VisualElement.create(visualArray.context, value)
-            visualArray.addView(child)
+            visualArray.addView(VisualElement.create(c, value))
+            // 初始化算法下标对子View实际下标的映射
             viewIndexMap[index] = index
         }
-
-        // 不参加排序， 用于指示下标位置的元素
-        visualArray.addView(VisualElement.createPoint(visualArray.context, "i"))
-        visualArray.addView(VisualElement.createPoint(visualArray.context, "j"))
+        // 添加下标元素，不参加排序
+        a.indices.forEach {
+            visualArray.addView(VisualElement.createIndex(c, it))
+        }
+        // 添加下标位置指针元素，不参加排序
+        visualArray.addView(VisualElement.createPoint(c, "i"))
+        visualArray.addView(VisualElement.createPoint(c, "j"))
     }
 
     /**

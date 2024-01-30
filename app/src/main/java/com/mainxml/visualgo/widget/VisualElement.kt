@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.icu.util.MeasureUnit.POINT
 import android.util.AttributeSet
 import android.view.View
 import androidx.annotation.ColorInt
@@ -18,28 +19,36 @@ class VisualElement @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    companion object {
-        private const val POINT = -1
+    enum class Type {
+        Element, Index, Point
+    }
 
-        /**
-         * 创建元素
-         * @param context Context
-         * @param value Int
-         * @return VisualElement
-         */
+    companion object {
         fun create(context: Context, value: Int): VisualElement {
-            return VisualElement(context).apply { this.value = value }
+            return VisualElement(context).apply {
+                type = Type.Element
+                this.value = value
+            }
         }
 
-        /**
-         * 创建指示元素位置的元素
-         * @param context Context
-         * @return VisualElement
-         */
+        fun createIndex(context: Context, index: Int): VisualElement {
+            return VisualElement(context).apply {
+                type = Type.Index
+                value = index
+            }
+        }
+
         fun createPoint(context: Context, name: String): VisualElement {
-            return create(context, POINT).apply { this.pointName = name }
+            return create(context, -1).apply {
+                type = Type.Point
+                tag = name
+            }
         }
     }
+
+    /** 元素类型 */
+    var type = Type.Element
+        private set
 
     /** 元素的值 */
     var value: Int = 0
@@ -51,12 +60,6 @@ class VisualElement @JvmOverloads constructor(
             field = value
             invalidate()
         }
-
-    /** 指针元素名称，当为指针元素类型时才有值 */
-    private var pointName = ""
-
-    /** 是否为指针元素 */
-    fun isPoint() = value == POINT
 
     private val defaultSize: Int = if (isInEditMode) 72 else 24.dp
     private val textSize: Float = if (isInEditMode) 42f else 14.dp.toFloat()
@@ -122,10 +125,15 @@ class VisualElement @JvmOverloads constructor(
             (paddingTop + dh).toFloat()
         )
         paint.color = color
+        paint.color = when (type) {
+            Type.Element -> color
+            Type.Index -> MyColor.GRAY
+            Type.Point -> MyColor.CYAN
+        }
         canvas.drawRect(rectF, paint)
 
         // 绘制文字
-        val text = if (value == POINT) pointName else value.toString()
+        val text = if (type == Type.Point) tag.toString() else value.toString()
         paint.textSize = textSize
         paint.color = MyColor.WHITE
         val textWidth = paint.measureText(text)
