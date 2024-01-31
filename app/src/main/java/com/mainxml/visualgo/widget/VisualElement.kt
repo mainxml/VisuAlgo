@@ -39,7 +39,7 @@ class VisualElement @JvmOverloads constructor(
         }
 
         fun createPoint(context: Context, name: String): VisualElement {
-            return create(context, -1).apply {
+            return create(context, 0).apply {
                 type = Type.Point
                 tag = name
             }
@@ -133,7 +133,10 @@ class VisualElement @JvmOverloads constructor(
         canvas.drawRect(rectF, paint)
 
         // 绘制文字
-        val text = if (type == Type.Point) tag.toString() else value.toString()
+        val text = when (type) {
+            Type.Element, Type.Index -> value.toString()
+            Type.Point -> tag.toString()
+        }
         paint.textSize = textSize
         paint.color = MyColor.WHITE
         val textWidth = paint.measureText(text)

@@ -2,10 +2,12 @@ package com.mainxml.visualgo.animation
 
 import android.animation.Animator
 import android.animation.AnimatorSet
+import androidx.core.view.get
 import com.mainxml.visualgo.util.Algo
-import com.mainxml.visualgo.util.OneIndexCallback
-import com.mainxml.visualgo.util.ThreeIndexCallback
-import com.mainxml.visualgo.util.TwoIndexCallback
+import com.mainxml.visualgo.util.onOneIndex
+import com.mainxml.visualgo.util.onPointChanged
+import com.mainxml.visualgo.util.onThreeIndex
+import com.mainxml.visualgo.util.onTwoIndex
 import com.mainxml.visualgo.widget.VisualArray
 import com.mainxml.visualgo.widget.VisualElement
 import java.util.LinkedList
@@ -32,7 +34,8 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      */
     fun selectionSort(a: IntArray) {
         initSort(a)
-        Algo.selectionSort(sortedArray, onSwap)
+        addPoints("m")
+        Algo.selectionSort(sortedArray, onSwap, onPointChanged)
         play()
     }
 
@@ -75,6 +78,12 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         }
     }
 
+    /** 原数组 */
+    private lateinit var originArray: IntArray
+
+    /** 已排序数组 */
+    private lateinit var sortedArray: IntArray
+
     /** 动画队列 */
     private val animatorQueue: Queue<LazyAnimator> = LinkedList()
 
@@ -82,18 +91,15 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
     private var playingAnimator: Animator? = null
 
     /**
-     * 算法下标对子View实际下标的映射。
+     * 算法下标对元素视图下标的映射。
      *
      * 因为动画移动子View时并没有实际改变子View在ViewGroup中的index，
      * 所以对子View进行动画时需要映射到其实际下标。
      */
     private val viewIndexMap = mutableMapOf<Int, Int>()
 
-    /** 原数组 */
-    private lateinit var originArray: IntArray
-
-    /** 已排序数组 */
-    private lateinit var sortedArray: IntArray
+    /** 指针视图的下标表 */
+    private val pointViewIndexMap = mutableMapOf<String, Int>()
 
     /**
      * 初始化数组和动画
@@ -103,27 +109,38 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         playingAnimator?.pause()
         playingAnimator?.removeAllListeners()
         animatorQueue.clear()
+
+        viewIndexMap.clear()
+        pointViewIndexMap.clear()
         visualArray.removeAllViews()
 
         originArray = a
         sortedArray = a.clone()
-        viewIndexMap.clear()
 
-        val c = visualArray.context
+        val context = visualArray.context
 
         // 创建对应输入数组的元素
         a.forEachIndexed { index, value ->
-            visualArray.addView(VisualElement.create(c, value))
+            visualArray.addView(VisualElement.create(context, value))
             // 初始化算法下标对子View实际下标的映射
             viewIndexMap[index] = index
         }
         // 添加下标元素，不参加排序
         a.indices.forEach {
-            visualArray.addView(VisualElement.createIndex(c, it))
+            visualArray.addView(VisualElement.createIndex(context, it))
         }
-        // 添加下标位置指针元素，不参加排序
-        visualArray.addView(VisualElement.createPoint(c, "i"))
-        visualArray.addView(VisualElement.createPoint(c, "j"))
+    }
+
+    /**
+     * 添加指针元素视图
+     * @param names Array<out String>
+     */
+    private fun addPoints(vararg names: String) {
+        val context = visualArray.context
+        names.forEach { name ->
+            visualArray.addView(VisualElement.createPoint(context, name))
+            pointViewIndexMap[name] = visualArray.childCount - 1
+        }
     }
 
     /**
@@ -152,17 +169,12 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         }
     }
 
-    /** 算法对元素交换的回调 */
-    private val onSwap: TwoIndexCallback = { i, j ->
-        swap(i, j)
-    }
-
     /**
-     * 动画交换两个元素
-     * @param i Int
-     * @param j Int
+     * 两个元素交换，添加动画
+     * - i Int 元素位置1
+     * - j Int 元素位置2
      */
-    private fun swap(i: Int, j: Int) {
+    private val onSwap: onTwoIndex = { i, j ->
         // 实际View的下标
         val vi = getViewIndex(i)
         val vj = getViewIndex(j)
@@ -177,44 +189,38 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
                     animatorQueue.offer(creator)
                 }
             }
-            return
-        }
-
-        // 位置不等时合成交换动画
-        visualArray.apply {
-            listOf(
-                { playTogether(select(vi), select(vj)) },
-                { playTogether(up(vi, true), up(vj)) },
-                { playTogether(move(vi, i - j), move(vj, j - i)) },
-                { playTogether(down(vi), down(vj)) },
-                { playTogether(unselect(vi), unselect(vj)) }
-            ).forEach { creator ->
-                animatorQueue.offer(creator)
+        } else {
+            // 位置不等时合成交换动画
+            visualArray.apply {
+                listOf(
+                    { playTogether(select(vi), select(vj)) },
+                    { playTogether(up(vi, true), up(vj)) },
+                    { playTogether(move(vi, i - j), move(vj, j - i)) },
+                    { playTogether(down(vi), down(vj)) },
+                    { playTogether(unselect(vi), unselect(vj)) }
+                ).forEach { creator ->
+                    animatorQueue.offer(creator)
+                }
             }
-        }
 
-        // 更新映射下标
-        viewIndexMap[i] = vj
-        viewIndexMap[j] = vi
+            // 更新映射下标
+            viewIndexMap[i] = vj
+            viewIndexMap[j] = vi
+        }
     }
 
     /** 停留在空中的View的位置 */
-    private var stayViewIndex = -1
-
-    /** 算法对元素抬起的回调 */
-    private val onUp: TwoIndexCallback = { i, stay ->
-        up(i, stay == 1)
-    }
+    private var stayingViewIndex = -1
 
     /**
-     * 升起一个元素
-     * @param i Int
-     * @param isStay Boolean 升起后是否在空中停留
+     * 元素升起，添加动画
+     * - i Int 元素位置
+     * - isStay Int 是否升起后停留在空中
      */
-    private fun up(i: Int, isStay: Boolean = false) {
+    private val onUp: onTwoIndex = { i, isStay ->
         val vi = getViewIndex(i)
-        if (isStay) {
-            stayViewIndex = vi
+        if (isStay == 1) {
+            stayingViewIndex = vi
         }
         val create: LazyAnimator = {
             visualArray.up(vi)
@@ -222,20 +228,15 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         animatorQueue.offer(create)
     }
 
-    /** 算法对元素下降的回调 */
-    private val onDown: OneIndexCallback = { i ->
-        down(i)
-    }
-
     /**
-     * 下降一个元素
-     * @param i Int
+     * 元素下降，添加动画
+     * - i Int 元素位置
      */
-    private fun down(i: Int) {
+    private val onDown: onOneIndex = { i ->
         val vi: Int
-        if (stayViewIndex != -1) {
-            vi = stayViewIndex
-            stayViewIndex = -1
+        if (stayingViewIndex != -1) {
+            vi = stayingViewIndex
+            stayingViewIndex = -1
         } else {
             vi = getViewIndex(i)
         }
@@ -245,20 +246,15 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         animatorQueue.offer(create)
     }
 
-    /** 算法对元素移动的回调 */
-    private val onMove: ThreeIndexCallback = { i, j, b ->
-        move(i, j, b == 1)
-    }
-
     /**
-     * 移动一个位置的元素到另一个位置
-     * @param i Int
-     * @param j Int
-     * @param isStay Boolean 是否移动在空中停留的那个元素
+     * 元素位置发生移动，添加动画
+     * - i Int 元素位置1
+     * - j Int 元素位置2
+     * - isStay Int 是否移动在空中停留的那个元素
      */
-    private fun move(i: Int, j: Int, isStay: Boolean) {
-        val vi = if (isStay) {
-            stayViewIndex
+    private val onMove: onThreeIndex = { i, j, isStay ->
+        val vi = if (isStay == 1) {
+            stayingViewIndex
         } else {
             getViewIndex(i)
         }
@@ -268,6 +264,28 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         animatorQueue.offer(create)
 
         viewIndexMap[j] = vi
+    }
+
+    /**
+     * 指针元素位置发生改变，添加动画
+     * - pointName 指针名
+     * - changedIndex 指针新位置
+     */
+    private val onPointChanged: onPointChanged = { pointName, changedIndex ->
+        val create: LazyAnimator = {
+            val animator: Animator
+            val targetPointIndex = pointViewIndexMap[pointName]
+            animator = if (targetPointIndex != null) {
+                val targetPoint = visualArray[targetPointIndex] as VisualElement
+                val moveCount = targetPoint.value - changedIndex
+                targetPoint.value = changedIndex
+                visualArray.move(targetPointIndex, moveCount)
+            } else {
+                AnimatorSet()
+            }
+            animator
+        }
+        animatorQueue.offer(create)
     }
 
     private fun playTogether(vararg animators: Animator): Animator {

@@ -1,25 +1,30 @@
 package com.mainxml.visualgo.util
 
 /**
- * @author zcp
+ * 一参数回调
  */
+typealias onOneIndex = (Int) -> Unit
 
 /**
- * 一个位置变动的回调
+ * 两参数回调
  */
-typealias OneIndexCallback = (Int) -> Unit
+typealias onTwoIndex = (Int, Int) -> Unit
 
 /**
- * 两个位置变动的回调
+ * 三参数回调
  */
-typealias TwoIndexCallback = (Int, Int) -> Unit
+typealias onThreeIndex = (Int, Int, Int) -> Unit
 
-typealias ThreeIndexCallback = (Int, Int, Int) -> Unit
+/**
+ * 指针位置变动回调（指针名，指针新下标）
+ */
+typealias onPointChanged = (String, Int) -> Unit
 
 /**
  * 算法
  *
  * 从小到大排序，修改比较符号可实现倒序。
+ * @author zcp
  */
 object Algo {
 
@@ -34,16 +39,20 @@ object Algo {
      * @param a IntArray
      * @param onSwap TwoIndexCallback
      */
-    fun selectionSort(a: IntArray, onSwap: TwoIndexCallback) {
+    fun selectionSort(a: IntArray, onSwap: onTwoIndex, onPointChanged: onPointChanged) {
         val n = a.size
         // 初始已排序区间为空，未排序区间为[0, n - 1]
         // 外循环：未排序区间为[i, n - 1]
         for (i in 0..< n - 1) {
+            //onPointChanged("i", i)
             var m = i
+            onPointChanged("m", m)
             // 内循环：寻找未排序区间的最小元素
             for (j in i + 1..< n) {
+                //onPointChanged("j", j)
                 if (a[j] < a[m]) {
                     m = j
+                    onPointChanged("m", m)
                 }
             }
             swap(a, i, m)
@@ -62,7 +71,7 @@ object Algo {
      * @param a IntArray
      * @param onSwap TwoIndexCallback
      */
-    fun bubbleSort(a: IntArray, onSwap: TwoIndexCallback) {
+    fun bubbleSort(a: IntArray, onSwap: onTwoIndex) {
         val n = a.size
         // 外循环：未排序区间为[0, n - 1]
         // 因为每轮结束时最右侧元素最大，所以倒序递减来对内循环做右界
@@ -90,12 +99,7 @@ object Algo {
      * @param onMove ThreeIndexCallback 前两个参数表示位置，第三个参数表示是否移动在空中停留的那个元素
      * @param onDown OneIndexCallback
      */
-    fun insertionSort(
-        a: IntArray,
-        onUp: TwoIndexCallback,
-        onMove: ThreeIndexCallback,
-        onDown: OneIndexCallback
-    ) {
+    fun insertionSort(a: IntArray, onUp: onTwoIndex, onMove: onThreeIndex, onDown: onOneIndex) {
         val n = a.size
         // 初始已排序区间为[0]，未排序区间为[1, n - 1]
         // 外循环：未排序区间为[i, n - 1]
@@ -144,7 +148,7 @@ object Algo {
      * @param right Int
      * @param onSwap TwoIndexCallback
      */
-    fun quickSort(a: IntArray, left: Int, right: Int, onSwap: TwoIndexCallback) {
+    fun quickSort(a: IntArray, left: Int, right: Int, onSwap: onTwoIndex) {
         if (left >= right) {
             return
         }

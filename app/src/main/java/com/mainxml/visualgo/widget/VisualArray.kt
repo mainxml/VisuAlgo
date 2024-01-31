@@ -110,7 +110,7 @@ class VisualArray @JvmOverloads constructor(
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         var elementLeft = paddingLeft + edgePadding
         var indexLeft = elementLeft
-        var pointLeft = elementLeft
+        val pointLeft = elementLeft
 
         val ch = maxChildHeight()
 
@@ -147,7 +147,7 @@ class VisualArray @JvmOverloads constructor(
                     val t1 = height - paddingBottom - edgePadding - ch
                     val cb = t1 + ch
                     child.layout(cl, t1, cr, cb)
-                    pointLeft = cr + elementPadding
+                    //pointLeft = cr + elementPadding // 指针初始都在0的位置
                 }
             }
         }
