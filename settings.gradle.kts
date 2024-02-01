@@ -12,6 +12,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // BRV
         maven("https://jitpack.io")
     }
 }

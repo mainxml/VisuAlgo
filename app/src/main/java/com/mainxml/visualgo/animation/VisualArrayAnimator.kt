@@ -34,7 +34,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      */
     fun selectionSort(a: IntArray) {
         initSort(a)
-        addPoints("m")
+        addPoints("i", "m")
         Algo.selectionSort(sortedArray, onSwap, onPointChanged)
         play()
     }
@@ -98,7 +98,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      */
     private val viewIndexMap = mutableMapOf<Int, Int>()
 
-    /** 指针视图的下标表 */
+    /** 指针视图的实际下标表 */
     private val pointViewIndexMap = mutableMapOf<String, Int>()
 
     /**
@@ -152,7 +152,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
                 animation.removeAllListeners()
                 val self = this
                 val lazyAnimator = animatorQueue.poll() ?: return
-                lazyAnimator().apply {
+                lazyAnimator.invoke().apply {
                     playingAnimator = this
                     addListener(self)
                     start()
@@ -271,19 +271,13 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      * - pointName 指针名
      * - changedIndex 指针新位置
      */
-    private val onPointChanged: onPointChanged = { pointName, changedIndex ->
+    private val onPointChanged: onPointChanged = f@ { pointName, changedIndex ->
+        val targetPointIndex = pointViewIndexMap[pointName] ?: return@f
+        val targetPoint = visualArray[targetPointIndex] as VisualElement
         val create: LazyAnimator = {
-            val animator: Animator
-            val targetPointIndex = pointViewIndexMap[pointName]
-            animator = if (targetPointIndex != null) {
-                val targetPoint = visualArray[targetPointIndex] as VisualElement
-                val moveCount = targetPoint.value - changedIndex
-                targetPoint.value = changedIndex
-                visualArray.move(targetPointIndex, moveCount)
-            } else {
-                AnimatorSet()
-            }
-            animator
+            val moveCount = targetPoint.value - changedIndex
+            targetPoint.value = changedIndex
+            visualArray.move(targetPointIndex, moveCount)
         }
         animatorQueue.offer(create)
     }

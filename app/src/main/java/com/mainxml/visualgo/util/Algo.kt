@@ -41,11 +41,10 @@ object Algo {
      */
     fun selectionSort(a: IntArray, onSwap: onTwoIndex, onPointChanged: onPointChanged) {
         val n = a.size
-        // 初始已排序区间为空，未排序区间为[0, n - 1]
         // 外循环：未排序区间为[i, n - 1]
         for (i in 0..< n - 1) {
-            //onPointChanged("i", i)
             var m = i
+            onPointChanged("i", i)
             onPointChanged("m", m)
             // 内循环：寻找未排序区间的最小元素
             for (j in i + 1..< n) {

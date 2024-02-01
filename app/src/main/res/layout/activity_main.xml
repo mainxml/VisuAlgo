@@ -16,6 +16,7 @@
         tools:ignore="HardcodedText" >
 
         <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/flex"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:layout_constraintTop_toTopOf="parent"
@@ -58,11 +59,22 @@
 
         </com.google.android.flexbox.FlexboxLayout>
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/flex"
+            android:layout_marginTop="8dp"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+            android:orientation="vertical"
+            android:overScrollMode="never"
+            tools:listitem="@layout/item_code_line" />
+
         <com.mainxml.visualgo.widget.VisualArray
             android:id="@+id/array"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/rv"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
