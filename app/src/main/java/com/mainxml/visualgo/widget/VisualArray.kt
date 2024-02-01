@@ -27,13 +27,14 @@ class VisualArray @JvmOverloads constructor(
     private val edgePadding = if (isInEditMode) 12 else 4.dp
     /** 元素Padding */
     private val elementPadding = if (isInEditMode) 6 else 2.dp
-    /** 边框圆角值 */
-    private val corner = 0f
-    /** 画笔线宽 */
-    private val strokeWidth = if (isInEditMode) 6 else 2.dp
     /** 高度扩大倍速, 用于留空区域显示动画 */
     private val heightMultiple = 6
+    /** 子View最高值 */
+    private var maxChildHeight = 0
+
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val strokeWidth = if (isInEditMode) 6 else 2.dp
+    private val corner = 0f
 
     init {
         // ViewGroup默认不执行onDraw，我们需要绘制
@@ -48,9 +49,16 @@ class VisualArray @JvmOverloads constructor(
      * 测量
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // 无子View时分配个占位
         if (childCount == 0) {
-            setMeasuredDimension(100, 100)
+            // 无子View时提供预览
+            if (isInEditMode) {
+                repeat(5) {
+                    @Suppress("DrawAllocation")
+                    addView(VisualElement(context).apply { value = it })
+                }
+            } else {
+                setMeasuredDimension(100, 100)
+            }
             return
         }
 
@@ -70,7 +78,9 @@ class VisualArray @JvmOverloads constructor(
                 }
                 sum += child.measuredWidth + elementPadding
             }
-            sum -= elementPadding
+            if (sum > 0) {
+                sum -= elementPadding
+            }
             // 防止宽度超过父ViewGroup限制
             resolveSize(sum, widthMeasureSpec)
         } else {
@@ -78,19 +88,23 @@ class VisualArray @JvmOverloads constructor(
             getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
         } + 2 * edgePadding
 
+        // 获取子View最高值
+        var sum = 0
+        children.forEach { child ->
+            child as VisualElement
+            if (child.type != VisualElement.Type.Element) {
+                return@forEach
+            }
+            if (child.measuredHeight > sum) {
+                sum = child.measuredHeight
+            }
+        }
+        maxChildHeight = sum
+
         // 当高为wrap_content时，寻找子View中的最大高度
         val height = if (heightSpecMode == MeasureSpec.AT_MOST) {
-            var sum = 0
-            children.forEach { child ->
-                child as VisualElement
-                if (child.type != VisualElement.Type.Element) {
-                    return@forEach
-                }
-                if (child.measuredHeight > sum) {
-                    sum = child.measuredHeight
-                }
-            }
-            sum *= heightMultiple // 额外加大指定倍数用于动画
+            // 额外加高指定倍数用于动画
+            sum *= heightMultiple
             // 防止高度超过父ViewGroup限制
             resolveSize(sum, heightMeasureSpec)
         } else {
@@ -112,8 +126,7 @@ class VisualArray @JvmOverloads constructor(
         var indexLeft = elementLeft
         val pointLeft = elementLeft
 
-        val ch = maxChildHeight()
-
+        val ch = maxChildHeight
         children.forEach { child ->
             child as VisualElement
             val cw = child.measuredWidth
@@ -142,22 +155,15 @@ class VisualArray @JvmOverloads constructor(
                 }
                 VisualElement.Type.Point -> {
                     // 在最下层绘制下标元素
-                    val cl = pointLeft
-                    val cr = cl + cw
+                    val cr = pointLeft + cw
                     val t1 = height - paddingBottom - edgePadding - ch
                     val cb = t1 + ch
-                    child.layout(cl, t1, cr, cb)
+                    child.layout(pointLeft, t1, cr, cb)
                     //pointLeft = cr + elementPadding // 指针初始都在0的位置
                 }
             }
         }
     }
-
-    /**
-     * 获取最高的子View
-     * @return Int
-     */
-    private fun maxChildHeight() = (height - 5 * edgePadding) / heightMultiple
 
     /**
      * 绘制
@@ -166,7 +172,7 @@ class VisualArray @JvmOverloads constructor(
         // 画边框
         val l = paddingLeft + strokeWidth / 2f
         val r = width - paddingRight - strokeWidth / 2f
-        val ch = maxChildHeight()
+        val ch = maxChildHeight
         val t1 = height.toFloat() - paddingBottom - edgePadding - ch
         val t2 = t1 - edgePadding - ch
         val t3 = t2 - edgePadding - ch - edgePadding - edgePadding + strokeWidth / 2
