@@ -1,13 +1,9 @@
 package com.mainxml.visualgo.util
 
-import com.mainxml.visualgo.animation.LazyAnimator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.LinkedList
-import java.util.Queue
-import kotlin.coroutines.Continuation
+import kotlin.concurrent.thread
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -16,33 +12,31 @@ import kotlin.coroutines.suspendCoroutine
  */
 class Sync {
 
-    private var continuationQueue: Queue<Continuation<Unit>> = LinkedList()
+    private var suspend = true
 
-    /**
-     * sync.execute {
-     *     lazyAnimator.invoke().apply {
-     *         playingAnimator = this
-     *         addListener(self)
-     *     }
-     * }
-     * @param block LazyAnimator
-     */
-    fun execute(block: LazyAnimator) {
+    fun test() {
         CoroutineScope(Dispatchers.Default).launch {
+            println("@@ 1")
             suspend()
-            withContext(Dispatchers.Main) {
-                block().start()
-            }
+            println("@@ 2")
+            suspend()
+            println("@@ 3")
         }
     }
 
     private suspend fun suspend() {
         suspendCoroutine {
-            continuationQueue.offer(it)
+            CoroutineScope(Dispatchers.Default).launch {
+                while (suspend) {
+                    /* no-op */
+                }
+                suspend = true
+                it.resume(Unit)
+            }
         }
     }
 
     fun resume() {
-        continuationQueue.poll()?.resume(Unit)
+        suspend = false
     }
 }

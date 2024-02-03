@@ -1,11 +1,19 @@
 package com.mainxml.visualgo
 
+import android.annotation.SuppressLint
+import android.content.Context
 import android.os.Bundle
-import com.drake.brv.utils.setup
+import android.view.ViewGroup
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.webkit.WebViewAssetLoader
+import androidx.webkit.WebViewAssetLoader.AssetsPathHandler
 import com.mainxml.visualgo.animation.VisualArrayAnimator
 import com.mainxml.visualgo.base.BaseActivity
 import com.mainxml.visualgo.databinding.ActivityMainBinding
-import com.mainxml.visualgo.databinding.ItemCodeLineBinding
+import com.mainxml.visualgo.util.AssetsWebViewClient
 
 /**
  * MainActivity
@@ -19,6 +27,7 @@ class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initViews()
+        initWebView()
     }
 
     private fun initViews() {
@@ -52,16 +61,38 @@ class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
         }
     }
 
-    private fun setupSourceCode() {
-        binging.rv.setup {
-            addType<String>(R.layout.item_code_line)
-            onBind {
-                val bd = getBinding<ItemCodeLineBinding>()
-                val code = getModel<String>()
-                bd.tv.text = code
-            }
-            val codes = mutableListOf<String>()
-            models = codes
-        }
+    private fun initWebView() {
+        val webView = binging.webView
+        val settings = binging.webView.settings
+        @SuppressLint("SetJavaScriptEnabled")
+        settings.javaScriptEnabled = true
+
+        // 访问内置assets目录的网页
+        webView.webViewClient = AssetsWebViewClient(this)
+
+        // 加载内置assets目录的网页
+        webView.loadUrl("https://mainxml.com/assets/algo/index.html")
+        /*binging.webView.evaluateJavascript("javascript:getSourceCode()") { sourceCode ->
+
+        }*/
+    }
+
+    override fun onResume() {
+        super.onResume()
+        binging.webView.onResume()
+        binging.webView.resumeTimers()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        binging.webView.onPause()
+        binging.webView.pauseTimers()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        binging.webView.stopLoading()
+        (binging.webView.parent as ViewGroup).removeView(binging.webView)
+        binging.webView.destroy()
     }
 }
