@@ -457,7 +457,7 @@ const createDep = (cleanup, computed2) => {
 const targetMap = /* @__PURE__ */ new WeakMap();
 const ITERATE_KEY = Symbol("");
 const MAP_KEY_ITERATE_KEY = Symbol("");
-function track(target, type, key) {
+function track$1(target, type, key) {
   if (shouldTrack && activeEffect) {
     let depsMap = targetMap.get(target);
     if (!depsMap) {
@@ -540,7 +540,7 @@ function createArrayInstrumentations() {
     instrumentations[key] = function(...args) {
       const arr = toRaw(this);
       for (let i = 0, l = this.length; i < l; i++) {
-        track(arr, "get", i + "");
+        track$1(arr, "get", i + "");
       }
       const res = arr[key](...args);
       if (res === -1 || res === false) {
@@ -564,7 +564,7 @@ function createArrayInstrumentations() {
 }
 function hasOwnProperty(key) {
   const obj = toRaw(this);
-  track(obj, "has", key);
+  track$1(obj, "has", key);
   return obj.hasOwnProperty(key);
 }
 class BaseReactiveHandler {
@@ -602,7 +602,7 @@ class BaseReactiveHandler {
       return res;
     }
     if (!isReadonly2) {
-      track(target, "get", key);
+      track$1(target, "get", key);
     }
     if (shallow) {
       return res;
@@ -660,12 +660,12 @@ class MutableReactiveHandler extends BaseReactiveHandler {
   has(target, key) {
     const result = Reflect.has(target, key);
     if (!isSymbol(key) || !builtInSymbols.has(key)) {
-      track(target, "has", key);
+      track$1(target, "has", key);
     }
     return result;
   }
   ownKeys(target) {
-    track(
+    track$1(
       target,
       "iterate",
       isArray(target) ? "length" : ITERATE_KEY
@@ -697,9 +697,9 @@ function get(target, key, isReadonly2 = false, isShallow2 = false) {
   const rawKey = toRaw(key);
   if (!isReadonly2) {
     if (hasChanged(key, rawKey)) {
-      track(rawTarget, "get", key);
+      track$1(rawTarget, "get", key);
     }
-    track(rawTarget, "get", rawKey);
+    track$1(rawTarget, "get", rawKey);
   }
   const { has: has2 } = getProto(rawTarget);
   const wrap = isShallow2 ? toShallow : isReadonly2 ? toReadonly : toReactive;
@@ -717,15 +717,15 @@ function has(key, isReadonly2 = false) {
   const rawKey = toRaw(key);
   if (!isReadonly2) {
     if (hasChanged(key, rawKey)) {
-      track(rawTarget, "has", key);
+      track$1(rawTarget, "has", key);
     }
-    track(rawTarget, "has", rawKey);
+    track$1(rawTarget, "has", rawKey);
   }
   return key === rawKey ? target.has(key) : target.has(key) || target.has(rawKey);
 }
 function size(target, isReadonly2 = false) {
   target = target["__v_raw"];
-  !isReadonly2 && track(toRaw(target), "iterate", ITERATE_KEY);
+  !isReadonly2 && track$1(toRaw(target), "iterate", ITERATE_KEY);
   return Reflect.get(target, "size", target);
 }
 function add(value) {
@@ -787,7 +787,7 @@ function createForEach(isReadonly2, isShallow2) {
     const target = observed["__v_raw"];
     const rawTarget = toRaw(target);
     const wrap = isShallow2 ? toShallow : isReadonly2 ? toReadonly : toReactive;
-    !isReadonly2 && track(rawTarget, "iterate", ITERATE_KEY);
+    !isReadonly2 && track$1(rawTarget, "iterate", ITERATE_KEY);
     return target.forEach((value, key) => {
       return callback.call(thisArg, wrap(value), wrap(key), observed);
     });
@@ -802,7 +802,7 @@ function createIterableMethod(method, isReadonly2, isShallow2) {
     const isKeyOnly = method === "keys" && targetIsMap;
     const innerIterator = target[method](...args);
     const wrap = isShallow2 ? toShallow : isReadonly2 ? toReadonly : toReactive;
-    !isReadonly2 && track(
+    !isReadonly2 && track$1(
       rawTarget,
       "iterate",
       isKeyOnly ? MAP_KEY_ITERATE_KEY : ITERATE_KEY
@@ -2208,7 +2208,7 @@ const PublicInstanceProxyHandlers = {
     let cssModule, globalProperties;
     if (publicGetter) {
       if (key === "$attrs") {
-        track(instance, "get", key);
+        track$1(instance, "get", key);
       }
       return publicGetter(instance);
     } else if (
@@ -5124,7 +5124,7 @@ function getAttrsProxy(instance) {
     instance.attrs,
     {
       get(target, key) {
-        track(instance, "get", "$attrs");
+        track$1(instance, "get", "$attrs");
         return target[key];
       }
     }
@@ -7070,538 +7070,6 @@ Prism.languages.js = Prism.languages.javascript;
     actions.forEach(callFunction);
   });
 })();
-(function() {
-  if (typeof Prism === "undefined" || typeof document === "undefined") {
-    return;
-  }
-  var callbacks = [];
-  var map = {};
-  var noop = function() {
-  };
-  Prism.plugins.toolbar = {};
-  var registerButton = Prism.plugins.toolbar.registerButton = function(key, opts) {
-    var callback;
-    if (typeof opts === "function") {
-      callback = opts;
-    } else {
-      callback = function(env) {
-        var element;
-        if (typeof opts.onClick === "function") {
-          element = document.createElement("button");
-          element.type = "button";
-          element.addEventListener("click", function() {
-            opts.onClick.call(this, env);
-          });
-        } else if (typeof opts.url === "string") {
-          element = document.createElement("a");
-          element.href = opts.url;
-        } else {
-          element = document.createElement("span");
-        }
-        if (opts.className) {
-          element.classList.add(opts.className);
-        }
-        element.textContent = opts.text;
-        return element;
-      };
-    }
-    if (key in map) {
-      console.warn('There is a button with the key "' + key + '" registered already.');
-      return;
-    }
-    callbacks.push(map[key] = callback);
-  };
-  function getOrder(element) {
-    while (element) {
-      var order = element.getAttribute("data-toolbar-order");
-      if (order != null) {
-        order = order.trim();
-        if (order.length) {
-          return order.split(/\s*,\s*/g);
-        } else {
-          return [];
-        }
-      }
-      element = element.parentElement;
-    }
-  }
-  var hook = Prism.plugins.toolbar.hook = function(env) {
-    var pre = env.element.parentNode;
-    if (!pre || !/pre/i.test(pre.nodeName)) {
-      return;
-    }
-    if (pre.parentNode.classList.contains("code-toolbar")) {
-      return;
-    }
-    var wrapper = document.createElement("div");
-    wrapper.classList.add("code-toolbar");
-    pre.parentNode.insertBefore(wrapper, pre);
-    wrapper.appendChild(pre);
-    var toolbar = document.createElement("div");
-    toolbar.classList.add("toolbar");
-    var elementCallbacks = callbacks;
-    var order = getOrder(env.element);
-    if (order) {
-      elementCallbacks = order.map(function(key) {
-        return map[key] || noop;
-      });
-    }
-    elementCallbacks.forEach(function(callback) {
-      var element = callback(env);
-      if (!element) {
-        return;
-      }
-      var item = document.createElement("div");
-      item.classList.add("toolbar-item");
-      item.appendChild(element);
-      toolbar.appendChild(item);
-    });
-    wrapper.appendChild(toolbar);
-  };
-  registerButton("label", function(env) {
-    var pre = env.element.parentNode;
-    if (!pre || !/pre/i.test(pre.nodeName)) {
-      return;
-    }
-    if (!pre.hasAttribute("data-label")) {
-      return;
-    }
-    var element;
-    var template;
-    var text = pre.getAttribute("data-label");
-    try {
-      template = document.querySelector("template#" + text);
-    } catch (e) {
-    }
-    if (template) {
-      element = template.content;
-    } else {
-      if (pre.hasAttribute("data-url")) {
-        element = document.createElement("a");
-        element.href = pre.getAttribute("data-url");
-      } else {
-        element = document.createElement("span");
-      }
-      element.textContent = text;
-    }
-    return element;
-  });
-  Prism.hooks.add("complete", hook);
-})();
-(function() {
-  if (typeof Prism === "undefined" || typeof document === "undefined") {
-    return;
-  }
-  if (!Prism.plugins.toolbar) {
-    console.warn("Show Languages plugin loaded before Toolbar plugin.");
-    return;
-  }
-  var Languages = (
-    /*languages_placeholder[*/
-    {
-      "none": "Plain text",
-      "plain": "Plain text",
-      "plaintext": "Plain text",
-      "text": "Plain text",
-      "txt": "Plain text",
-      "html": "HTML",
-      "xml": "XML",
-      "svg": "SVG",
-      "mathml": "MathML",
-      "ssml": "SSML",
-      "rss": "RSS",
-      "css": "CSS",
-      "clike": "C-like",
-      "js": "JavaScript",
-      "abap": "ABAP",
-      "abnf": "ABNF",
-      "al": "AL",
-      "antlr4": "ANTLR4",
-      "g4": "ANTLR4",
-      "apacheconf": "Apache Configuration",
-      "apl": "APL",
-      "aql": "AQL",
-      "ino": "Arduino",
-      "arff": "ARFF",
-      "armasm": "ARM Assembly",
-      "arm-asm": "ARM Assembly",
-      "art": "Arturo",
-      "asciidoc": "AsciiDoc",
-      "adoc": "AsciiDoc",
-      "aspnet": "ASP.NET (C#)",
-      "asm6502": "6502 Assembly",
-      "asmatmel": "Atmel AVR Assembly",
-      "autohotkey": "AutoHotkey",
-      "autoit": "AutoIt",
-      "avisynth": "AviSynth",
-      "avs": "AviSynth",
-      "avro-idl": "Avro IDL",
-      "avdl": "Avro IDL",
-      "awk": "AWK",
-      "gawk": "GAWK",
-      "sh": "Shell",
-      "basic": "BASIC",
-      "bbcode": "BBcode",
-      "bbj": "BBj",
-      "bnf": "BNF",
-      "rbnf": "RBNF",
-      "bqn": "BQN",
-      "bsl": "BSL (1C:Enterprise)",
-      "oscript": "OneScript",
-      "csharp": "C#",
-      "cs": "C#",
-      "dotnet": "C#",
-      "cpp": "C++",
-      "cfscript": "CFScript",
-      "cfc": "CFScript",
-      "cil": "CIL",
-      "cilkc": "Cilk/C",
-      "cilk-c": "Cilk/C",
-      "cilkcpp": "Cilk/C++",
-      "cilk-cpp": "Cilk/C++",
-      "cilk": "Cilk/C++",
-      "cmake": "CMake",
-      "cobol": "COBOL",
-      "coffee": "CoffeeScript",
-      "conc": "Concurnas",
-      "csp": "Content-Security-Policy",
-      "css-extras": "CSS Extras",
-      "csv": "CSV",
-      "cue": "CUE",
-      "dataweave": "DataWeave",
-      "dax": "DAX",
-      "django": "Django/Jinja2",
-      "jinja2": "Django/Jinja2",
-      "dns-zone-file": "DNS zone file",
-      "dns-zone": "DNS zone file",
-      "dockerfile": "Docker",
-      "dot": "DOT (Graphviz)",
-      "gv": "DOT (Graphviz)",
-      "ebnf": "EBNF",
-      "editorconfig": "EditorConfig",
-      "ejs": "EJS",
-      "etlua": "Embedded Lua templating",
-      "erb": "ERB",
-      "excel-formula": "Excel Formula",
-      "xlsx": "Excel Formula",
-      "xls": "Excel Formula",
-      "fsharp": "F#",
-      "firestore-security-rules": "Firestore security rules",
-      "ftl": "FreeMarker Template Language",
-      "gml": "GameMaker Language",
-      "gamemakerlanguage": "GameMaker Language",
-      "gap": "GAP (CAS)",
-      "gcode": "G-code",
-      "gdscript": "GDScript",
-      "gedcom": "GEDCOM",
-      "gettext": "gettext",
-      "po": "gettext",
-      "glsl": "GLSL",
-      "gn": "GN",
-      "gni": "GN",
-      "linker-script": "GNU Linker Script",
-      "ld": "GNU Linker Script",
-      "go-module": "Go module",
-      "go-mod": "Go module",
-      "graphql": "GraphQL",
-      "hbs": "Handlebars",
-      "hs": "Haskell",
-      "hcl": "HCL",
-      "hlsl": "HLSL",
-      "http": "HTTP",
-      "hpkp": "HTTP Public-Key-Pins",
-      "hsts": "HTTP Strict-Transport-Security",
-      "ichigojam": "IchigoJam",
-      "icu-message-format": "ICU Message Format",
-      "idr": "Idris",
-      "ignore": ".ignore",
-      "gitignore": ".gitignore",
-      "hgignore": ".hgignore",
-      "npmignore": ".npmignore",
-      "inform7": "Inform 7",
-      "javadoc": "JavaDoc",
-      "javadoclike": "JavaDoc-like",
-      "javastacktrace": "Java stack trace",
-      "jq": "JQ",
-      "jsdoc": "JSDoc",
-      "js-extras": "JS Extras",
-      "json": "JSON",
-      "webmanifest": "Web App Manifest",
-      "json5": "JSON5",
-      "jsonp": "JSONP",
-      "jsstacktrace": "JS stack trace",
-      "js-templates": "JS Templates",
-      "keepalived": "Keepalived Configure",
-      "kts": "Kotlin Script",
-      "kt": "Kotlin",
-      "kumir": "KuMir (КуМир)",
-      "kum": "KuMir (КуМир)",
-      "latex": "LaTeX",
-      "tex": "TeX",
-      "context": "ConTeXt",
-      "lilypond": "LilyPond",
-      "ly": "LilyPond",
-      "emacs": "Lisp",
-      "elisp": "Lisp",
-      "emacs-lisp": "Lisp",
-      "llvm": "LLVM IR",
-      "log": "Log file",
-      "lolcode": "LOLCODE",
-      "magma": "Magma (CAS)",
-      "md": "Markdown",
-      "markup-templating": "Markup templating",
-      "matlab": "MATLAB",
-      "maxscript": "MAXScript",
-      "mel": "MEL",
-      "metafont": "METAFONT",
-      "mongodb": "MongoDB",
-      "moon": "MoonScript",
-      "n1ql": "N1QL",
-      "n4js": "N4JS",
-      "n4jsd": "N4JS",
-      "nand2tetris-hdl": "Nand To Tetris HDL",
-      "naniscript": "Naninovel Script",
-      "nani": "Naninovel Script",
-      "nasm": "NASM",
-      "neon": "NEON",
-      "nginx": "nginx",
-      "nsis": "NSIS",
-      "objectivec": "Objective-C",
-      "objc": "Objective-C",
-      "ocaml": "OCaml",
-      "opencl": "OpenCL",
-      "openqasm": "OpenQasm",
-      "qasm": "OpenQasm",
-      "parigp": "PARI/GP",
-      "objectpascal": "Object Pascal",
-      "psl": "PATROL Scripting Language",
-      "pcaxis": "PC-Axis",
-      "px": "PC-Axis",
-      "peoplecode": "PeopleCode",
-      "pcode": "PeopleCode",
-      "php": "PHP",
-      "phpdoc": "PHPDoc",
-      "php-extras": "PHP Extras",
-      "plant-uml": "PlantUML",
-      "plantuml": "PlantUML",
-      "plsql": "PL/SQL",
-      "powerquery": "PowerQuery",
-      "pq": "PowerQuery",
-      "mscript": "PowerQuery",
-      "powershell": "PowerShell",
-      "promql": "PromQL",
-      "properties": ".properties",
-      "protobuf": "Protocol Buffers",
-      "purebasic": "PureBasic",
-      "pbfasm": "PureBasic",
-      "purs": "PureScript",
-      "py": "Python",
-      "qsharp": "Q#",
-      "qs": "Q#",
-      "q": "Q (kdb+ database)",
-      "qml": "QML",
-      "rkt": "Racket",
-      "cshtml": "Razor C#",
-      "razor": "Razor C#",
-      "jsx": "React JSX",
-      "tsx": "React TSX",
-      "renpy": "Ren'py",
-      "rpy": "Ren'py",
-      "res": "ReScript",
-      "rest": "reST (reStructuredText)",
-      "robotframework": "Robot Framework",
-      "robot": "Robot Framework",
-      "rb": "Ruby",
-      "sas": "SAS",
-      "sass": "Sass (Sass)",
-      "scss": "Sass (SCSS)",
-      "shell-session": "Shell session",
-      "sh-session": "Shell session",
-      "shellsession": "Shell session",
-      "sml": "SML",
-      "smlnj": "SML/NJ",
-      "solidity": "Solidity (Ethereum)",
-      "sol": "Solidity (Ethereum)",
-      "solution-file": "Solution file",
-      "sln": "Solution file",
-      "soy": "Soy (Closure Template)",
-      "sparql": "SPARQL",
-      "rq": "SPARQL",
-      "splunk-spl": "Splunk SPL",
-      "sqf": "SQF: Status Quo Function (Arma 3)",
-      "sql": "SQL",
-      "stata": "Stata Ado",
-      "iecst": "Structured Text (IEC 61131-3)",
-      "supercollider": "SuperCollider",
-      "sclang": "SuperCollider",
-      "systemd": "Systemd configuration file",
-      "t4-templating": "T4 templating",
-      "t4-cs": "T4 Text Templates (C#)",
-      "t4": "T4 Text Templates (C#)",
-      "t4-vb": "T4 Text Templates (VB)",
-      "tap": "TAP",
-      "tt2": "Template Toolkit 2",
-      "toml": "TOML",
-      "trickle": "trickle",
-      "troy": "troy",
-      "trig": "TriG",
-      "ts": "TypeScript",
-      "tsconfig": "TSConfig",
-      "uscript": "UnrealScript",
-      "uc": "UnrealScript",
-      "uorazor": "UO Razor Script",
-      "uri": "URI",
-      "url": "URL",
-      "vbnet": "VB.Net",
-      "vhdl": "VHDL",
-      "vim": "vim",
-      "visual-basic": "Visual Basic",
-      "vba": "VBA",
-      "vb": "Visual Basic",
-      "wasm": "WebAssembly",
-      "web-idl": "Web IDL",
-      "webidl": "Web IDL",
-      "wgsl": "WGSL",
-      "wiki": "Wiki markup",
-      "wolfram": "Wolfram language",
-      "nb": "Mathematica Notebook",
-      "wl": "Wolfram language",
-      "xeoracube": "XeoraCube",
-      "xml-doc": "XML doc (.net)",
-      "xojo": "Xojo (REALbasic)",
-      "xquery": "XQuery",
-      "yaml": "YAML",
-      "yml": "YAML",
-      "yang": "YANG"
-    }
-  );
-  Prism.plugins.toolbar.registerButton("show-language", function(env) {
-    var pre = env.element.parentNode;
-    if (!pre || !/pre/i.test(pre.nodeName)) {
-      return;
-    }
-    function guessTitle(id) {
-      if (!id) {
-        return id;
-      }
-      return (id.substring(0, 1).toUpperCase() + id.substring(1)).replace(/s(?=cript)/, "S");
-    }
-    var language = pre.getAttribute("data-language") || Languages[env.language] || guessTitle(env.language);
-    if (!language) {
-      return;
-    }
-    var element = document.createElement("span");
-    element.textContent = language;
-    return element;
-  });
-})();
-(function() {
-  if (typeof Prism === "undefined" || typeof document === "undefined") {
-    return;
-  }
-  if (!Prism.plugins.toolbar) {
-    console.warn("Copy to Clipboard plugin loaded before Toolbar plugin.");
-    return;
-  }
-  function registerClipboard(element, copyInfo) {
-    element.addEventListener("click", function() {
-      copyTextToClipboard(copyInfo);
-    });
-  }
-  function fallbackCopyTextToClipboard(copyInfo) {
-    var textArea = document.createElement("textarea");
-    textArea.value = copyInfo.getText();
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.position = "fixed";
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-      var successful = document.execCommand("copy");
-      setTimeout(function() {
-        if (successful) {
-          copyInfo.success();
-        } else {
-          copyInfo.error();
-        }
-      }, 1);
-    } catch (err) {
-      setTimeout(function() {
-        copyInfo.error(err);
-      }, 1);
-    }
-    document.body.removeChild(textArea);
-  }
-  function copyTextToClipboard(copyInfo) {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(copyInfo.getText()).then(copyInfo.success, function() {
-        fallbackCopyTextToClipboard(copyInfo);
-      });
-    } else {
-      fallbackCopyTextToClipboard(copyInfo);
-    }
-  }
-  function selectElementText(element) {
-    window.getSelection().selectAllChildren(element);
-  }
-  function getSettings(startElement) {
-    var settings = {
-      "copy": "Copy",
-      "copy-error": "Press Ctrl+C to copy",
-      "copy-success": "Copied!",
-      "copy-timeout": 5e3
-    };
-    var prefix = "data-prismjs-";
-    for (var key in settings) {
-      var attr = prefix + key;
-      var element = startElement;
-      while (element && !element.hasAttribute(attr)) {
-        element = element.parentElement;
-      }
-      if (element) {
-        settings[key] = element.getAttribute(attr);
-      }
-    }
-    return settings;
-  }
-  Prism.plugins.toolbar.registerButton("copy-to-clipboard", function(env) {
-    var element = env.element;
-    var settings = getSettings(element);
-    var linkCopy = document.createElement("button");
-    linkCopy.className = "copy-to-clipboard-button";
-    linkCopy.setAttribute("type", "button");
-    var linkSpan = document.createElement("span");
-    linkCopy.appendChild(linkSpan);
-    setState("copy");
-    registerClipboard(linkCopy, {
-      getText: function() {
-        return element.textContent;
-      },
-      success: function() {
-        setState("copy-success");
-        resetText();
-      },
-      error: function() {
-        setState("copy-error");
-        setTimeout(function() {
-          selectElementText(element);
-        }, 1);
-        resetText();
-      }
-    });
-    return linkCopy;
-    function resetText() {
-      setTimeout(function() {
-        setState("copy");
-      }, settings["copy-timeout"]);
-    }
-    function setState(state) {
-      linkSpan.textContent = settings[state];
-      linkCopy.setAttribute("data-copy-state", state);
-    }
-  });
-})();
 var prismNormalizeWhitespace = { exports: {} };
 (function(module) {
   (function() {
@@ -7796,41 +7264,117 @@ var prismNormalizeWhitespace = { exports: {} };
     });
   })();
 })(prismNormalizeWhitespace);
-function getAlgoSourceCode() {
-  return selectionSort.toString();
-}
-function selectionSort() {
-  trackLine(true);
-  let a = [5, 4, 3, 2, 1];
-  let n = a.length;
-  for (let i = 0; i < n - 1; i++) {
-    let m = i;
-    trackLine();
-    for (let j = i + 1; j < n; j++) {
-      if (a[j] < a[m]) {
-        m = j;
-      }
-    }
-    swap(a, i, m);
-    trackLine();
+function getSourceCode(algorithmName) {
+  switch (algorithmName) {
+    case "selectionSort":
+      return commentedCode(selectionSort.toString());
+    case "bubbleSort":
+      return commentedCode(bubbleSort.toString());
+    case "insertionSort":
+      return commentedCode(insertionSort.toString());
+    case "quickSort":
+      return commentedCode(quickSort.toString());
+    default:
+      return "Nothing";
   }
 }
-function swap(a, i, j) {
+function selectionSort(a, onSwap) {
+  track(true);
+  const n = a.length;
+  for (let i = 0; i < n - 1; i++) {
+    let m = i;
+    track();
+    for (let j = i + 1; j < n; j++) {
+      track();
+      if (a[j] < a[m]) {
+        m = j;
+        track();
+      }
+    }
+    swap(a, i, m, onSwap);
+    track();
+  }
+}
+function bubbleSort(a, onSwap) {
+  const n = a.length;
+  for (let i = n - 1; i > 0; i--) {
+    for (let j = 0; j < i; j++) {
+      if (a[j] > a[j + 1]) {
+        swap(a, j, j + 1, onSwap);
+      }
+    }
+  }
+}
+function insertionSort(a, onUp, onMove, onDown) {
+  const n = a.length;
+  for (let i = 1; i < n; i++) {
+    let base = a[i];
+    let j = i - 1;
+    onUp(i, 1);
+    while (j >= 0 && a[j] > base) {
+      onMove(j, j + 1, 0);
+      a[j + 1] = a[j];
+      j--;
+    }
+    a[j + 1] = base;
+    onMove(i, j + 1, 1);
+    onDown(i);
+  }
+}
+function quickSort(a, left, right, onSwap) {
+  if (left >= right) {
+    return;
+  }
+  let i = left;
+  let j = right;
+  while (i < j) {
+    while (i < j && a[j] >= a[left]) {
+      j--;
+    }
+    while (i < j && a[i] <= a[left]) {
+      i++;
+    }
+    swap(a, i, j, onSwap);
+  }
+  swap(a, left, i, onSwap);
+  quickSort(a, left, i - 1, onSwap);
+  quickSort(a, i + 1, right, onSwap);
+}
+function swap(a, i, j, onSwap) {
   let temp = a[i];
   a[i] = a[j];
   a[j] = temp;
+  onSwap(i, j);
 }
 const executeLineQueue = [];
 let startLine = 0;
-function trackLine(isStartLine) {
+function track(isStartLine) {
   let curLine = new Error().stack.split("\n")[2].split(":").slice(-2, -1)[0];
   if (isStartLine) {
-    startLine = curLine;
+    startLine = parseInt(curLine);
   }
   let executeLine = curLine - startLine + 2;
   executeLineQueue.push(executeLine);
   return executeLine;
 }
+function commentedCode(sourceCode) {
+  let lines = sourceCode.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const str = lines[i];
+    if (str.includes("track")) {
+      lines[i] = str.replace("track", "// track");
+    }
+  }
+  return lines.join("\n");
+}
+const algo = {
+  getSourceCode,
+  selectionSort,
+  bubbleSort,
+  insertionSort,
+  quickSort,
+  executeLineQueue
+};
 const _hoisted_1 = ["data-line"];
 const _hoisted_2 = {
   class: "language-js"
@@ -7838,20 +7382,58 @@ const _hoisted_2 = {
 const _sfc_main = {
   __name: "App",
   setup(__props) {
-    const executeLine = ref(0);
+    const app = window.$app;
+    const highlightLine = ref();
+    const sourceCode = ref("'选择一个算法开始'");
     onMounted(() => {
       Prism$1.highlightAll();
-      selectionSort();
-      sync();
+      window.showSourceCode = showSourceCode;
+      window.animateSort = animateSort;
     });
     onUpdated(() => {
       Prism$1.highlightAll();
     });
+    function showSourceCode(algorithmName) {
+      sourceCode.value = algo.getSourceCode(algorithmName);
+      Prism$1.highlightAll();
+    }
+    function animateSort(algorithmName, a) {
+      const onSwap = (i, j) => {
+        app.onSwap(i, j);
+      };
+      const onUp = (i, isStay) => {
+        app.onUp(i, isStay);
+      };
+      const onDown = (i) => {
+        app.onDown(i);
+      };
+      const onMove = (i, j, isStay) => {
+        app.onMove(i, j, isStay);
+      };
+      switch (algorithmName) {
+        case "selectionSort":
+          algo.selectionSort(a, onSwap);
+          break;
+        case "bubbleSort":
+          algo.bubbleSort(a, onSwap);
+          break;
+        case "insertionSort":
+          algo.insertionSort(a, onUp, onMove, onDown);
+          break;
+        case "quickSort":
+          algo.quickSort(a, 0, a.length - 1, onSwap);
+          break;
+        default:
+          return;
+      }
+      sync();
+      app.play();
+    }
     async function sync() {
-      for (const line of executeLineQueue) {
+      for (const line of algo.executeLineQueue) {
         await new Promise((resolve) => {
           setTimeout(() => {
-            executeLine.value = line;
+            highlightLine.value = line;
             resolve();
           }, 1e3);
         });
@@ -7860,8 +7442,8 @@ const _sfc_main = {
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", null, [createBaseVNode("pre", {
         class: "line-numbers",
-        "data-line": executeLine.value
-      }, [createTextVNode("      "), createBaseVNode("code", _hoisted_2, "\n        " + toDisplayString(unref(getAlgoSourceCode)()) + "\n      ", 1), createTextVNode("\n    ")], 8, _hoisted_1)]);
+        "data-line": highlightLine.value
+      }, [createTextVNode("      "), createBaseVNode("code", _hoisted_2, "\n        " + toDisplayString(sourceCode.value) + "\n      ", 1), createTextVNode("\n    ")], 8, _hoisted_1)]);
     };
   }
 };

@@ -2,6 +2,7 @@ package com.mainxml.visualgo.animation
 
 import android.animation.Animator
 import android.animation.AnimatorSet
+import android.webkit.WebView
 import androidx.core.view.get
 import com.mainxml.visualgo.util.Algo
 import com.mainxml.visualgo.util.onOneIndex
@@ -39,6 +40,16 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         play()
     }
 
+    fun selectionSortWithWeb(a: IntArray, webView: WebView) {
+        initSort(a)
+
+        val script1 = "javascript:showSourceCode('selectionSort')"
+        webView.evaluateJavascript(script1, null)
+
+        val script2 = "javascript:animateSort('selectionSort', ${a.toList()})"
+        webView.evaluateJavascript(script2, null)
+    }
+
     /**
      * 冒泡排序
      * @param a IntArray
@@ -47,6 +58,16 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         initSort(a)
         Algo.bubbleSort(sortedArray, onSwap)
         play()
+    }
+
+    fun bubbleSortWithWeb(a: IntArray, webView: WebView) {
+        initSort(a)
+
+        val script1 = "javascript:showSourceCode('bubbleSort')"
+        webView.evaluateJavascript(script1, null)
+
+        val script2 = "javascript:animateSort('bubbleSort', ${a.toList()})"
+        webView.evaluateJavascript(script2, null)
     }
 
     /**
@@ -59,6 +80,16 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         play()
     }
 
+    fun insertionSortWithWeb(a: IntArray, webView: WebView) {
+        initSort(a)
+
+        val script1 = "javascript:showSourceCode('insertionSort')"
+        webView.evaluateJavascript(script1, null)
+
+        val script2 = "javascript:animateSort('insertionSort', ${a.toList()})"
+        webView.evaluateJavascript(script2, null)
+    }
+
     /**
      * 快速排序
      * @param a IntArray
@@ -67,6 +98,16 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
         initSort(a)
         Algo.quickSort(sortedArray, 0, sortedArray.lastIndex, onSwap)
         play()
+    }
+
+    fun quickSortWithWeb(a: IntArray, webView: WebView) {
+        initSort(a)
+
+        val script1 = "javascript:showSourceCode('quickSort')"
+        webView.evaluateJavascript(script1, null)
+
+        val script2 = "javascript:animateSort('quickSort', ${a.toList()})"
+        webView.evaluateJavascript(script2, null)
     }
 
     /**
@@ -146,7 +187,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
     /**
      * 播放动画
      */
-    private fun play() {
+    fun play() {
         val listener = object : AnimatorListenerImp() {
             override fun onAnimationEnd(animation: Animator) {
                 animation.removeAllListeners()
@@ -174,7 +215,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      * - i Int 元素位置1
      * - j Int 元素位置2
      */
-    private val onSwap: onTwoIndex = { i, j ->
+    val onSwap: onTwoIndex = { i, j ->
         // 实际View的下标
         val vi = getViewIndex(i)
         val vj = getViewIndex(j)
@@ -217,7 +258,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      * - i Int 元素位置
      * - isStay Int 是否升起后停留在空中
      */
-    private val onUp: onTwoIndex = { i, isStay ->
+    val onUp: onTwoIndex = { i, isStay ->
         val vi = getViewIndex(i)
         if (isStay == 1) {
             stayingViewIndex = vi
@@ -232,7 +273,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      * 元素下降，添加动画
      * - i Int 元素位置
      */
-    private val onDown: onOneIndex = { i ->
+    val onDown: onOneIndex = { i ->
         val vi: Int
         if (stayingViewIndex != -1) {
             vi = stayingViewIndex
@@ -252,7 +293,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      * - j Int 元素位置2
      * - isStay Int 是否移动在空中停留的那个元素
      */
-    private val onMove: onThreeIndex = { i, j, isStay ->
+    val onMove: onThreeIndex = { i, j, isStay ->
         val vi = if (isStay == 1) {
             stayingViewIndex
         } else {
@@ -271,7 +312,7 @@ class VisualArrayAnimator(private val visualArray: VisualArray) {
      * - pointName 指针名
      * - changedIndex 指针新位置
      */
-    private val onPointChanged: onPointChanged = f@ { pointName, changedIndex ->
+    val onPointChanged: onPointChanged = f@ { pointName, changedIndex ->
         val targetPointIndex = pointViewIndexMap[pointName] ?: return@f
         val targetPoint = visualArray[targetPointIndex] as VisualElement
         val create: LazyAnimator = {
