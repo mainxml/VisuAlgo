@@ -1,3 +1,9 @@
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
 (function polyfill() {
   const relList = document.createElement("link").relList;
   if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -457,7 +463,7 @@ const createDep = (cleanup, computed2) => {
 const targetMap = /* @__PURE__ */ new WeakMap();
 const ITERATE_KEY = Symbol("");
 const MAP_KEY_ITERATE_KEY = Symbol("");
-function track$1(target, type, key) {
+function track(target, type, key) {
   if (shouldTrack && activeEffect) {
     let depsMap = targetMap.get(target);
     if (!depsMap) {
@@ -540,7 +546,7 @@ function createArrayInstrumentations() {
     instrumentations[key] = function(...args) {
       const arr = toRaw(this);
       for (let i = 0, l = this.length; i < l; i++) {
-        track$1(arr, "get", i + "");
+        track(arr, "get", i + "");
       }
       const res = arr[key](...args);
       if (res === -1 || res === false) {
@@ -564,7 +570,7 @@ function createArrayInstrumentations() {
 }
 function hasOwnProperty(key) {
   const obj = toRaw(this);
-  track$1(obj, "has", key);
+  track(obj, "has", key);
   return obj.hasOwnProperty(key);
 }
 class BaseReactiveHandler {
@@ -602,7 +608,7 @@ class BaseReactiveHandler {
       return res;
     }
     if (!isReadonly2) {
-      track$1(target, "get", key);
+      track(target, "get", key);
     }
     if (shallow) {
       return res;
@@ -660,12 +666,12 @@ class MutableReactiveHandler extends BaseReactiveHandler {
   has(target, key) {
     const result = Reflect.has(target, key);
     if (!isSymbol(key) || !builtInSymbols.has(key)) {
-      track$1(target, "has", key);
+      track(target, "has", key);
     }
     return result;
   }
   ownKeys(target) {
-    track$1(
+    track(
       target,
       "iterate",
       isArray(target) ? "length" : ITERATE_KEY
@@ -697,9 +703,9 @@ function get(target, key, isReadonly2 = false, isShallow2 = false) {
   const rawKey = toRaw(key);
   if (!isReadonly2) {
     if (hasChanged(key, rawKey)) {
-      track$1(rawTarget, "get", key);
+      track(rawTarget, "get", key);
     }
-    track$1(rawTarget, "get", rawKey);
+    track(rawTarget, "get", rawKey);
   }
   const { has: has2 } = getProto(rawTarget);
   const wrap = isShallow2 ? toShallow : isReadonly2 ? toReadonly : toReactive;
@@ -717,15 +723,15 @@ function has(key, isReadonly2 = false) {
   const rawKey = toRaw(key);
   if (!isReadonly2) {
     if (hasChanged(key, rawKey)) {
-      track$1(rawTarget, "has", key);
+      track(rawTarget, "has", key);
     }
-    track$1(rawTarget, "has", rawKey);
+    track(rawTarget, "has", rawKey);
   }
   return key === rawKey ? target.has(key) : target.has(key) || target.has(rawKey);
 }
 function size(target, isReadonly2 = false) {
   target = target["__v_raw"];
-  !isReadonly2 && track$1(toRaw(target), "iterate", ITERATE_KEY);
+  !isReadonly2 && track(toRaw(target), "iterate", ITERATE_KEY);
   return Reflect.get(target, "size", target);
 }
 function add(value) {
@@ -787,7 +793,7 @@ function createForEach(isReadonly2, isShallow2) {
     const target = observed["__v_raw"];
     const rawTarget = toRaw(target);
     const wrap = isShallow2 ? toShallow : isReadonly2 ? toReadonly : toReactive;
-    !isReadonly2 && track$1(rawTarget, "iterate", ITERATE_KEY);
+    !isReadonly2 && track(rawTarget, "iterate", ITERATE_KEY);
     return target.forEach((value, key) => {
       return callback.call(thisArg, wrap(value), wrap(key), observed);
     });
@@ -802,7 +808,7 @@ function createIterableMethod(method, isReadonly2, isShallow2) {
     const isKeyOnly = method === "keys" && targetIsMap;
     const innerIterator = target[method](...args);
     const wrap = isShallow2 ? toShallow : isReadonly2 ? toReadonly : toReactive;
-    !isReadonly2 && track$1(
+    !isReadonly2 && track(
       rawTarget,
       "iterate",
       isKeyOnly ? MAP_KEY_ITERATE_KEY : ITERATE_KEY
@@ -2052,6 +2058,15 @@ function invokeDirectiveHook(vnode, prevVNode, instance, name) {
     }
   }
 }
+/*! #__NO_SIDE_EFFECTS__ */
+// @__NO_SIDE_EFFECTS__
+function defineComponent(options, extraOptions) {
+  return isFunction(options) ? (
+    // #8326: extend call and options.name access are considered side-effects
+    // by Rollup, so we have to wrap it in a pure-annotated IIFE.
+    /* @__PURE__ */ (() => extend({ name: options.name }, extraOptions, { setup: options }))()
+  ) : options;
+}
 const isAsyncWrapper = (i) => !!i.type.__asyncLoader;
 const isKeepAlive = (vnode) => vnode.type.__isKeepAlive;
 function onActivated(hook, target) {
@@ -2208,7 +2223,7 @@ const PublicInstanceProxyHandlers = {
     let cssModule, globalProperties;
     if (publicGetter) {
       if (key === "$attrs") {
-        track$1(instance, "get", key);
+        track(instance, "get", key);
       }
       return publicGetter(instance);
     } else if (
@@ -5124,7 +5139,7 @@ function getAttrsProxy(instance) {
     instance.attrs,
     {
       get(target, key) {
-        track$1(instance, "get", "$attrs");
+        track(instance, "get", "$attrs");
         return target[key];
       }
     }
@@ -7264,187 +7279,288 @@ var prismNormalizeWhitespace = { exports: {} };
     });
   })();
 })(prismNormalizeWhitespace);
-function getSourceCode(algorithmName) {
-  switch (algorithmName) {
-    case "selectionSort":
-      return commentedCode(selectionSort.toString());
-    case "bubbleSort":
-      return commentedCode(bubbleSort.toString());
-    case "insertionSort":
-      return commentedCode(insertionSort.toString());
-    case "quickSort":
-      return commentedCode(quickSort.toString());
-    default:
-      return "Nothing";
+class CallBack {
+  constructor() {
+    // App原生方法映射对象
+    __publicField(this, "app", window.$app);
+  }
+  /**
+   * 两个元素交换
+   * @param {number} i - 下标1
+   * @param {number} j - 下标2
+   * @return {void}
+   */
+  onSwap(i, j) {
+    this.app.onSwap(i, j);
+  }
+  /**
+   * 元素升起
+   * @param {number} i - 下标
+   * @param {boolean} isFloating - 升起后是否悬浮
+   * @return {void}
+   */
+  onUp(i, isFloating) {
+    this.app.onUp(i, isFloating);
+  }
+  /**
+   * 元素下降
+   * @param {number} i - 下标
+   * @return {void}
+   */
+  onDown(i) {
+    this.app.onDown(i);
+  }
+  /**
+   * 元素移动
+   * @param {number} i - 开始下标
+   * @param {number} j - 结束下标
+   * @param {boolean} isFloating - 是否移动浮动的元素
+   */
+  onMove(i, j, isFloating) {
+    this.app.onMove(i, j, isFloating);
+  }
+  /**
+   * 指针元素移动
+   * @param {string} pointName 指针元素名称
+   * @param {number} i 指针新下标
+   */
+  onPointMove(pointName, i) {
+    this.app.onPointMove(pointName, i);
+  }
+  /**
+   * 跟踪代码行
+   * @param lineNumber
+   */
+  onTrack(lineNumber) {
+    this.app.onTrack(lineNumber);
+  }
+  /**
+   * 播放动画
+   */
+  play() {
+    this.app.play();
   }
 }
-function selectionSort(a, onSwap) {
-  track(true);
-  const n = a.length;
-  for (let i = 0; i < n - 1; i++) {
-    let m = i;
-    track();
-    for (let j = i + 1; j < n; j++) {
-      track();
-      if (a[j] < a[m]) {
-        m = j;
-        track();
+class Algo {
+  constructor() {
+    __publicField(this, "startLine", 0);
+  }
+  /**
+   * 获取算法源码
+   * @param algorithmName 算法名
+   */
+  getSourceCode(algorithmName) {
+    switch (algorithmName) {
+      case "selectionSort":
+        return this.filterCharacter(this.selectionSort.toString());
+      case "bubbleSort":
+        return this.filterCharacter(this.bubbleSort.toString());
+      case "insertionSort":
+        return this.filterCharacter(this.insertionSort.toString());
+      case "quickSort":
+        return this.filterCharacter(this.quickSort.toString());
+      default:
+        return "Nothing";
+    }
+  }
+  /**
+   * 选择排序
+   * @param {number[]} a
+   * @param {CallBack} callback
+   */
+  selectionSort(a, callback) {
+    this.track(callback, true);
+    const n = a.length;
+    for (let i = 0; i < n - 1; i++) {
+      let m = i;
+      this.track(callback);
+      for (let j = i + 1; j < n; j++) {
+        this.track(callback);
+        if (a[j] < a[m]) {
+          m = j;
+          this.track(callback);
+        }
+      }
+      this.track(callback);
+      this.swap(a, i, m, callback);
+    }
+    this.track(callback);
+  }
+  /**
+   * 冒泡排序
+   * @param {number[]} a
+   * @param {CallBack} callback
+   */
+  bubbleSort(a, callback) {
+    this.track(callback, true);
+    const n = a.length;
+    for (let i = n - 1; i > 0; i--) {
+      this.track(callback);
+      for (let j = 0; j < i; j++) {
+        if (a[j] > a[j + 1]) {
+          this.track(callback);
+          this.swap(a, j, j + 1, callback);
+        }
       }
     }
-    swap(a, i, m, onSwap);
-    track();
+    this.track(callback);
   }
-}
-function bubbleSort(a, onSwap) {
-  const n = a.length;
-  for (let i = n - 1; i > 0; i--) {
-    for (let j = 0; j < i; j++) {
-      if (a[j] > a[j + 1]) {
-        swap(a, j, j + 1, onSwap);
+  /**
+   * 插入排序
+   * @param {number[]} a
+   * @param {CallBack} callback
+   */
+  insertionSort(a, callback) {
+    this.track(callback, true);
+    const n = a.length;
+    for (let i = 1; i < n; i++) {
+      let base = a[i];
+      let j = i - 1;
+      this.track(callback);
+      callback.onUp(i, true);
+      while (j >= 0 && a[j] > base) {
+        this.track(callback);
+        callback.onMove(j, j + 1, false);
+        a[j + 1] = a[j];
+        j--;
+        this.track(callback);
+      }
+      a[j + 1] = base;
+      this.track(callback);
+      callback.onMove(i, j + 1, true);
+      callback.onDown(i);
+    }
+    this.track(callback);
+  }
+  /**
+   * 快速排序
+   * @param {number[]} a
+   * @param {number} left
+   * @param {number} right
+   * @param {CallBack} callback
+   */
+  quickSort(a, left, right, callback) {
+    this.track(callback, true);
+    if (left >= right) {
+      this.track(callback);
+      return;
+    }
+    let i = left;
+    let j = right;
+    this.track(callback);
+    while (i < j) {
+      while (i < j && a[j] >= a[left]) {
+        j--;
+        this.track(callback);
+      }
+      while (i < j && a[i] <= a[left]) {
+        i++;
+        this.track(callback);
+      }
+      this.track(callback);
+      this.swap(a, i, j, callback);
+    }
+    this.track(callback);
+    this.swap(a, left, i, callback);
+    this.quickSort(a, left, i - 1, callback);
+    this.quickSort(a, i + 1, right, callback);
+  }
+  /**
+   * 交换两个个元素
+   * @param a
+   * @param i
+   * @param j
+   * @param callback
+   */
+  swap(a, i, j, callback) {
+    let temp = a[i];
+    a[i] = a[j];
+    a[j] = temp;
+    callback.onSwap(i, j);
+  }
+  /**
+   * 追踪代码
+   * @param callback
+   * @param isStartLine
+   * @private
+   */
+  track(callback, isStartLine = false) {
+    var _a;
+    let curLineStr = ((_a = new Error().stack) == null ? void 0 : _a.split("\n")[2].split(":").slice(-2, -1)[0]) ?? "0";
+    let curLine = parseInt(curLineStr);
+    if (isStartLine) {
+      this.startLine = curLine;
+    }
+    let executeLine = curLine - this.startLine + 2;
+    callback.onTrack(executeLine);
+    return executeLine;
+  }
+  /**
+   * 过虑掉多余的字符
+   * @param sourceCode
+   */
+  filterCharacter(sourceCode) {
+    let lines = sourceCode.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes("this.")) {
+        lines[i] = lines[i].replace("this.", "");
+      }
+      if (lines[i].includes("track")) {
+        lines[i] = lines[i].replace("track", "// track");
       }
     }
+    return lines.filter((line) => line.length != 0).join("\n");
   }
 }
-function insertionSort(a, onUp, onMove, onDown) {
-  const n = a.length;
-  for (let i = 1; i < n; i++) {
-    let base = a[i];
-    let j = i - 1;
-    onUp(i, 1);
-    while (j >= 0 && a[j] > base) {
-      onMove(j, j + 1, 0);
-      a[j + 1] = a[j];
-      j--;
-    }
-    a[j + 1] = base;
-    onMove(i, j + 1, 1);
-    onDown(i);
-  }
-}
-function quickSort(a, left, right, onSwap) {
-  if (left >= right) {
-    return;
-  }
-  let i = left;
-  let j = right;
-  while (i < j) {
-    while (i < j && a[j] >= a[left]) {
-      j--;
-    }
-    while (i < j && a[i] <= a[left]) {
-      i++;
-    }
-    swap(a, i, j, onSwap);
-  }
-  swap(a, left, i, onSwap);
-  quickSort(a, left, i - 1, onSwap);
-  quickSort(a, i + 1, right, onSwap);
-}
-function swap(a, i, j, onSwap) {
-  let temp = a[i];
-  a[i] = a[j];
-  a[j] = temp;
-  onSwap(i, j);
-}
-const executeLineQueue = [];
-let startLine = 0;
-function track(isStartLine) {
-  let curLine = new Error().stack.split("\n")[2].split(":").slice(-2, -1)[0];
-  if (isStartLine) {
-    startLine = parseInt(curLine);
-  }
-  let executeLine = curLine - startLine + 2;
-  executeLineQueue.push(executeLine);
-  return executeLine;
-}
-function commentedCode(sourceCode) {
-  let lines = sourceCode.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const str = lines[i];
-    if (str.includes("track")) {
-      lines[i] = str.replace("track", "// track");
-    }
-  }
-  return lines.join("\n");
-}
-const algo = {
-  getSourceCode,
-  selectionSort,
-  bubbleSort,
-  insertionSort,
-  quickSort,
-  executeLineQueue
-};
 const _hoisted_1 = ["data-line"];
 const _hoisted_2 = {
   class: "language-js"
 };
-const _sfc_main = {
+const _sfc_main = /* @__PURE__ */ defineComponent({
   __name: "App",
   setup(__props) {
-    const app = window.$app;
-    const highlightLine = ref();
-    const sourceCode = ref("'选择一个算法开始'");
+    const _highlightLineNumber = ref();
+    const _sourceCode = ref("'选择一个算法开始'");
+    const algo = new Algo();
     onMounted(() => {
-      Prism$1.highlightAll();
       window.showSourceCode = showSourceCode;
       window.animateSort = animateSort;
-    });
-    onUpdated(() => {
+      window.highlightLineNumber = highlightLineNumber;
       Prism$1.highlightAll();
     });
+    onUpdated(() => Prism$1.highlightAll());
     function showSourceCode(algorithmName) {
-      sourceCode.value = algo.getSourceCode(algorithmName);
-      Prism$1.highlightAll();
+      _sourceCode.value = algo.getSourceCode(algorithmName);
     }
     function animateSort(algorithmName, a) {
-      const onSwap = (i, j) => {
-        app.onSwap(i, j);
-      };
-      const onUp = (i, isStay) => {
-        app.onUp(i, isStay);
-      };
-      const onDown = (i) => {
-        app.onDown(i);
-      };
-      const onMove = (i, j, isStay) => {
-        app.onMove(i, j, isStay);
-      };
+      const callback = new CallBack();
       switch (algorithmName) {
         case "selectionSort":
-          algo.selectionSort(a, onSwap);
+          algo.selectionSort(a, callback);
           break;
         case "bubbleSort":
-          algo.bubbleSort(a, onSwap);
+          algo.bubbleSort(a, callback);
           break;
         case "insertionSort":
-          algo.insertionSort(a, onUp, onMove, onDown);
+          algo.insertionSort(a, callback);
           break;
         case "quickSort":
-          algo.quickSort(a, 0, a.length - 1, onSwap);
+          algo.quickSort(a, 0, a.length - 1, callback);
           break;
         default:
           return;
       }
-      sync();
-      app.play();
+      callback.play();
     }
-    async function sync() {
-      for (const line of algo.executeLineQueue) {
-        await new Promise((resolve) => {
-          setTimeout(() => {
-            highlightLine.value = line;
-            resolve();
-          }, 1e3);
-        });
-      }
+    function highlightLineNumber(lineNumber) {
+      _highlightLineNumber.value = lineNumber;
     }
     return (_ctx, _cache) => {
       return openBlock(), createElementBlock("div", null, [createBaseVNode("pre", {
         class: "line-numbers",
-        "data-line": highlightLine.value
-      }, [createTextVNode("      "), createBaseVNode("code", _hoisted_2, "\n        " + toDisplayString(sourceCode.value) + "\n      ", 1), createTextVNode("\n    ")], 8, _hoisted_1)]);
+        "data-line": _highlightLineNumber.value
+      }, [createTextVNode("      "), createBaseVNode("code", _hoisted_2, "\n        " + toDisplayString(_sourceCode.value) + "\n      ", 1), createTextVNode("\n    ")], 8, _hoisted_1)]);
     };
   }
-};
+});
 createApp(_sfc_main).mount("#app");

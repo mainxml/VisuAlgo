@@ -203,16 +203,6 @@ class VisualArray @JvmOverloads constructor(
         return ObjectAnimator.ofFloat(child, propertyName, start, end)
     }
 
-    fun up2(index: Int): Animator {
-        val child = get(index)
-        val propertyName = "y"
-        val childHeight = child.height.toFloat()
-        val start = child.y
-        val end = start - childHeight / 2
-        child.tag = Pair(start, end)
-        return ObjectAnimator.ofFloat(child, propertyName, start, end)
-    }
-
     /**
      * 垂直向下动画
      * @param index Int ChildView下标

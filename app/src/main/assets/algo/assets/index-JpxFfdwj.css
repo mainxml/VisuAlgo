@@ -236,8 +236,7 @@ pre[class*="language-"] {
 pre[class*="language-"] {
   font-size: 12px;
 }
-
-/* 行高亮背景色 */
+/* 代码行高亮背景色 */
 .line-highlight {
   background-color: #83BA8280;
 }

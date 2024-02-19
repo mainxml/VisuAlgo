@@ -13,7 +13,7 @@ typealias onTwoIndex = (Int, Int) -> Unit
 /**
  * 三参数回调
  */
-typealias onThreeIndex = (Int, Int, Int) -> Unit
+typealias onThreeIndex = (Int, Int, Boolean) -> Unit
 
 /**
  * 指针位置变动回调（指针名，指针新下标）
@@ -109,14 +109,14 @@ object Algo {
 
             // 内循环：将 base 插入到已排序部分的正确位置
             while (j >= 0 && a[j] > base) {
-                onMove(j, j + 1, 0)
+                onMove(j, j + 1, false)
 
                 a[j + 1] = a[j]
                 --j
             }
             a[j + 1] = base
 
-            onMove(i, j + 1, 1)
+            onMove(i, j + 1, true)
             onDown(i)
         }
     }

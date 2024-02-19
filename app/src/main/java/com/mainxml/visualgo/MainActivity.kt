@@ -3,11 +3,11 @@ package com.mainxml.visualgo
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.ViewGroup
-import com.mainxml.visualgo.animation.VisualArrayAnimator
+import com.mainxml.visualgo.animation.SortAnimator
 import com.mainxml.visualgo.base.BaseActivity
 import com.mainxml.visualgo.databinding.ActivityMainBinding
 import com.mainxml.visualgo.util.AssetsWebViewClient
-import com.mainxml.visualgo.util.JsCallNativeInterface
+import com.mainxml.visualgo.util.AppInterface
 
 /**
  * MainActivity
@@ -24,16 +24,16 @@ class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
         initWebView()
     }
 
-    private lateinit var animator: VisualArrayAnimator
+    private lateinit var animator: SortAnimator
 
-    private lateinit var jsCallNativeInterface: JsCallNativeInterface
+    private lateinit var appInterface: AppInterface
 
     private fun initViews() {
         // 待排序数组
         val a = intArrayOf(5, 4, 3, 2, 1)
 
         // 动画师
-        animator = VisualArrayAnimator(binging.array)
+        animator = SortAnimator(binging.array, binging.webView)
 
         // 显示数组
         animator.showArray(a)
@@ -44,23 +44,19 @@ class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
         }
         // 选择排序
         binging.selectionSort.setOnClickListener {
-            //animator.selectionSort(a)
-            animator.selectionSortWithWeb(a, binging.webView)
+            animator.selectionSort(a)
         }
         // 冒泡排序
         binging.bubbleSort.setOnClickListener {
-            //animator.bubbleSort(a)
-            animator.bubbleSortWithWeb(a, binging.webView)
+            animator.bubbleSort(a)
         }
         // 插入排序
         binging.insertionSort.setOnClickListener {
-            //animator.insertionSort(a)
-            animator.insertionSortWithWeb(a, binging.webView)
+            animator.insertionSort(a)
         }
         // 快速排序
         binging.quickSort.setOnClickListener {
-            //animator.quickSort(a)
-            animator.quickSortWithWeb(a, binging.webView)
+            animator.quickSort(a)
         }
     }
 
@@ -74,8 +70,8 @@ class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
             webViewClient = AssetsWebViewClient(context)
 
             // 设置多个原生方法映射到一个js对象内，供js调用
-            jsCallNativeInterface = JsCallNativeInterface(animator)
-            addJavascriptInterface(jsCallNativeInterface, jsCallNativeInterface.name)
+            appInterface = AppInterface(animator)
+            addJavascriptInterface(appInterface, appInterface.name)
 
             // 加载内置assets目录的网页
             loadUrl("https://mainxml.com/assets/algo/index.html")
