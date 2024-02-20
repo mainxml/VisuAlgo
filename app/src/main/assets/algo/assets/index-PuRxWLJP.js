@@ -7397,6 +7397,7 @@ class Algo {
     for (let i = n - 1; i > 0; i--) {
       this.track(callback);
       for (let j = 0; j < i; j++) {
+        this.track(callback);
         if (a[j] > a[j + 1]) {
           this.track(callback);
           this.swap(a, j, j + 1, callback);
@@ -7423,7 +7424,6 @@ class Algo {
         callback.onMove(j, j + 1, false);
         a[j + 1] = a[j];
         j--;
-        this.track(callback);
       }
       a[j + 1] = base;
       this.track(callback);
@@ -7481,7 +7481,7 @@ class Algo {
   /**
    * 追踪代码
    * @param callback
-   * @param isStartLine
+   * @param isStartLine 是否开始行
    * @private
    */
   track(callback, isStartLine = false) {
@@ -7506,7 +7506,8 @@ class Algo {
         lines[i] = lines[i].replace("this.", "");
       }
       if (lines[i].includes("track")) {
-        lines[i] = lines[i].replace("track", "// track");
+        lines[i] = lines[i].replace("track", "// track |");
+        lines[i] = lines[i].split("|")[0];
       }
     }
     return lines.filter((line) => line.length != 0).join("\n");

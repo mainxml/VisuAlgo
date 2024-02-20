@@ -34,14 +34,22 @@ class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
 
         // 动画师
         animator = SortAnimator(binging.array, binging.webView)
-
         // 显示数组
         animator.showArray(a)
 
-        // 点击重制
+        // 点击重置
         binging.reset.setOnClickListener {
             animator.resetSort()
         }
+        // 点击上一步
+        binging.previousStep.setOnClickListener {
+            animator.previousStep()
+        }
+        // 点击下一步
+        binging.nextStep.setOnClickListener {
+            animator.nextStep()
+        }
+
         // 选择排序
         binging.selectionSort.setOnClickListener {
             animator.selectionSort(a)
