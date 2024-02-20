@@ -51,7 +51,7 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
         viewIndexMap.clear()
         pointViewIndexMap.clear()
         visualArray.removeAllViews()
-        stepMap.clear()
+        stepList.clear()
 
         sortedArray = a
         originArray = a.clone()
@@ -166,24 +166,24 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
         }
     }
 
+    /** 当前动画步骤 */
     private var curStep = 0
 
-    /** 所有动画步骤Map */
-    private val stepMap = mutableListOf<Step>()
+    /** 所有动画步骤列表 */
+    private val stepList = mutableListOf<Step>()
 
     private fun stepRecord(animationIndex: Int, vararg elementIndexes: Int) {
         val step = Step(animationIndex)
-        val xys = mutableListOf<Triple<Int, Float, Float>>()
-
+        val elementViewPosList = mutableListOf<Triple<Int, Float, Float>>()
         elementIndexes.forEach {
             val v = visualArray[it]
             if (v is VisualElement) {
-                xys.add(Triple(it, v.x, v.y))
+                elementViewPosList.add(Triple(it, v.x, v.y))
             }
         }
-        step.beforeAnimationPositionList = xys
-        stepMap.add(step)
-        curStep = stepMap.lastIndex
+        step.elementViewPosList = elementViewPosList
+        stepList.add(step)
+        curStep = stepList.lastIndex
     }
 
     fun previousStep() {
@@ -191,44 +191,43 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
             return
         }
 
-        if (curStep == stepMap.lastIndex) {
-            val step = stepMap[curStep]
-            val nextXYList = mutableListOf<Triple<Int, Float, Float>>()
-            step.beforeAnimationPositionList.forEach {
-                nextXYList.add(Triple(it.first, visualArray[it.first].x, visualArray[it.first].y))
-            }
-            if (step.afterAnimationPositionList == null) {
-                step.afterAnimationPositionList = nextXYList
-            }
-        }
-
         curStep--
-        val step = stepMap[curStep]
-        val nextXYList = mutableListOf<Triple<Int, Float, Float>>()
-        step.beforeAnimationPositionList.forEach {
-            nextXYList.add(Triple(it.first, visualArray[it.first].x, visualArray[it.first].y))
+        val step = stepList[curStep]
+        step.elementViewPosList.forEach {
             visualArray[it.first].x = it.second
             visualArray[it.first].y = it.third
-
-            // TODO 算法下标也要重制
-        }
-        if (step.afterAnimationPositionList == null) {
-            step.afterAnimationPositionList = nextXYList
         }
     }
 
     fun nextStep() {
-        if (curStep + 1 > stepMap.lastIndex) {
+        if (curStep + 1 > stepList.lastIndex) {
             return
         }
 
-        val step = stepMap[curStep++]
-        step.afterAnimationPositionList?.forEach {
-            visualArray[it.first].x = it.second
-            visualArray[it.first].y = it.third
+        val step = stepList[curStep]
+        val start = if (curStep == 0) {
+            0
+        } else {
+            findNextAnimationIndex(stepList[curStep - 1].animationIndex) + 1
         }
+        val end = findNextAnimationIndex(step.animationIndex)
+        curStep++
 
-        play(step.animationIndex, stepMap[curStep].animationIndex - 1)
+        play(start, end)
+
+        // TODO 目前是跟踪交换点，优化为跟踪每次埋点
+    }
+
+    private fun findNextAnimationIndex(searchStart: Int): Int {
+        var v = 0
+        for (i in searchStart .. animatorQueue.lastIndex) {
+            val anim = animatorQueue[i].invoke()
+            if (anim is AnimatorSet && anim.startDelay == 200L) {
+                v = i - 1
+                break
+            }
+        }
+        return v
     }
 
     /**
@@ -384,7 +383,7 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
     }
 
     /**
-     * 一个延迟动画，用于等待js动画
+     * 跟踪代码行
      */
     fun track(lineNumber: Int) {
         val lazyAnimator: LazyAnimator = {

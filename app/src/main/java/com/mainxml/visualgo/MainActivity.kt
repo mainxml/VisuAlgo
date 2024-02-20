@@ -5,18 +5,18 @@ import android.os.Bundle
 import android.view.ViewGroup
 import com.mainxml.visualgo.animation.SortAnimator
 import com.mainxml.visualgo.base.BaseActivity
+import com.mainxml.visualgo.base.BaseViewModel
 import com.mainxml.visualgo.databinding.ActivityMainBinding
-import com.mainxml.visualgo.util.AssetsWebViewClient
 import com.mainxml.visualgo.util.AppInterface
+import com.mainxml.visualgo.util.AssetsWebViewClient
 
 /**
  * MainActivity
  * @author zcp
  */
-class MainActivity : BaseActivity<MainVM, ActivityMainBinding>() {
+class MainActivity : BaseActivity<BaseViewModel, ActivityMainBinding>() {
 
-    override val layoutId: Int
-        get() = R.layout.activity_main
+    override fun getLayoutId() = R.layout.activity_main
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

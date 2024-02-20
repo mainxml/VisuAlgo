@@ -21,9 +21,9 @@ abstract class BaseActivity<VM: BaseViewModel, BD: ViewDataBinding> : AppCompatA
     protected lateinit var binging: BD
 
     /**
-     * 视图id
+     * 页面布局资源id
      */
-    abstract val layoutId: Int
+    abstract fun getLayoutId(): Int
 
     @CallSuper
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,8 +52,8 @@ abstract class BaseActivity<VM: BaseViewModel, BD: ViewDataBinding> : AppCompatA
      * 初始化泛型ViewDataBinding
      */
     private fun initViewDataBinding() {
-        binging = DataBindingUtil.setContentView(this, layoutId)
+        binging = DataBindingUtil.setContentView(this, getLayoutId())
         binging.lifecycleOwner = this
-        binging.setVariable(BR.vm, vm)
+        //binging.setVariable(BR.vm, vm)
     }
 }

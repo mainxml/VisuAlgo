@@ -4,9 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <data>
-        <variable
-            name="vm"
-            type="com.mainxml.visualgo.MainVM" />
+
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout

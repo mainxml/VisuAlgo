@@ -6,6 +6,6 @@ import androidx.lifecycle.ViewModel
 /**
  * @author zcp
  */
-abstract class BaseViewModel : ViewModel(), DefaultLifecycleObserver {
+open class BaseViewModel : ViewModel(), DefaultLifecycleObserver {
 
 }
