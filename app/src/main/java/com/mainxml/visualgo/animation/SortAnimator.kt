@@ -172,6 +172,11 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
     /** 所有动画步骤列表 */
     private val stepList = mutableListOf<Step>()
 
+    /**
+     * 步骤记录
+     * @param animationIndex Int 当前动画索引
+     * @param elementIndexes IntArray 元素视图下标
+     */
     private fun stepRecord(animationIndex: Int, vararg elementIndexes: Int) {
         val step = Step(animationIndex)
         val elementViewPosList = mutableListOf<Triple<Int, Float, Float>>()
@@ -186,36 +191,52 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
         curStep = stepList.lastIndex
     }
 
+    /**
+     * 上一步
+     */
     fun previousStep() {
-        if (curStep - 1 < 0) {
+        if (curStep < 0) {
             return
         }
-
+        if (curStep > stepList.lastIndex) {
+            curStep = stepList.lastIndex
+        }
         curStep--
         val step = stepList[curStep]
         step.elementViewPosList.forEach {
             visualArray[it.first].x = it.second
             visualArray[it.first].y = it.third
         }
-    }
 
-    fun nextStep() {
-        if (curStep + 1 > stepList.lastIndex) {
-            return
-        }
-
-        val step = stepList[curStep]
+        // 执行一次动画让代码高亮
         val start = if (curStep == 0) {
-            0
+            1
         } else {
             findNextAnimationIndex(stepList[curStep - 1].animationIndex) + 1
         }
-        val end = findNextAnimationIndex(step.animationIndex)
+        play(start, start)
+    }
+
+    /**
+     * 下一步
+     */
+    fun nextStep() {
+        if (curStep > stepList.lastIndex) {
+            return
+        }
+        val step = stepList[curStep]
+        val start = if (curStep == 0) {
+            1
+        } else {
+            findNextAnimationIndex(stepList[curStep - 1].animationIndex) + 1
+        }
+        val end = if (curStep != stepList.lastIndex) {
+            findNextAnimationIndex(step.animationIndex)
+        } else {
+            animatorQueue.lastIndex
+        }
         curStep++
-
         play(start, end)
-
-        // TODO 目前是跟踪交换点，优化为跟踪每次埋点
     }
 
     private fun findNextAnimationIndex(searchStart: Int): Int {
@@ -326,6 +347,9 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
         if (isFloating) {
             floatingViewIndex = vi
         }
+
+        stepRecord(animatorQueue.lastIndex + 1, vi)
+
         val lazyAnimator: LazyAnimator = {
             visualArray.up(vi)
         }
@@ -344,6 +368,9 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
         } else {
             vi = getViewIndex(i)
         }
+
+        stepRecord(animatorQueue.lastIndex + 1, vi)
+
         val lazyAnimator: LazyAnimator = {
             visualArray.down(vi)
         }
@@ -358,11 +385,13 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
      */
     fun move(i: Int, j: Int, isFloating: Boolean = false) {
         val vi = if (isFloating) floatingViewIndex else getViewIndex(i)
+
+        stepRecord(animatorQueue.lastIndex + 1, vi)
+
         val lazyAnimator: LazyAnimator = {
             visualArray.move(vi, i - j)
         }
         animatorQueue.offer(lazyAnimator)
-
         viewIndexMap[j] = vi
     }
 

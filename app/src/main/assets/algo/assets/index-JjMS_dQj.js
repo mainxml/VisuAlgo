@@ -7502,6 +7502,10 @@ class Algo {
   filterCharacter(sourceCode) {
     let lines = sourceCode.split("\n");
     for (let i = 0; i < lines.length; i++) {
+      if (i == 0) {
+        lines[i] = "public " + lines[i];
+        continue;
+      }
       if (lines[i].includes("this.")) {
         lines[i] = lines[i].replace("this.", "");
       }
