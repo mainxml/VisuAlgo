@@ -8,4 +8,3 @@ import com.mainxml.visualgo.base.BaseApplication
 
 val Int.dp
     get() = (BaseApplication.get().resources.displayMetrics.density * this + 0.5f).toInt()
-
