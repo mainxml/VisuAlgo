@@ -42,6 +42,11 @@ class AppInterface(private val arrayAnimator: SortAnimator) {
     }
 
     @JavascriptInterface
+    fun addPoints(names: Array<String>) {
+        arrayAnimator.addPoints(*names)
+    }
+
+    @JavascriptInterface
     fun play() {
         arrayAnimator.play()
     }

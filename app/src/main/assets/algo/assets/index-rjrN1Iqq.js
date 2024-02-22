@@ -7335,6 +7335,13 @@ class CallBack {
     this.app.onTrack(lineNumber);
   }
   /**
+   * 添加指针元素视图
+   * @param names
+   */
+  addPoints(...names) {
+    this.app.addPoints(names);
+  }
+  /**
    * 播放动画
    */
   play() {
@@ -7364,21 +7371,46 @@ class Algo {
     }
   }
   /**
+   * 动画排序
+   * @param algorithmName 算法名称
+   * @param a 数组
+   */
+  animateSort(algorithmName, a) {
+    const callback = new CallBack();
+    switch (algorithmName) {
+      case "selectionSort":
+        this.selectionSort(a, callback);
+        break;
+      case "bubbleSort":
+        this.bubbleSort(a, callback);
+        break;
+      case "insertionSort":
+        this.insertionSort(a, callback);
+        break;
+      case "quickSort":
+        this.quickSort(a, 0, a.length - 1, callback);
+        break;
+      default:
+        return;
+    }
+    callback.play();
+  }
+  /**
    * 选择排序
    * @param {number[]} a
    * @param {CallBack} callback
    */
   selectionSort(a, callback) {
-    this.track(callback, true);
+    this.track(callback, true, ["i", 0], ["j", 0], ["m", 0]);
     const n = a.length;
     for (let i = 0; i < n - 1; i++) {
       let m = i;
-      this.track(callback);
+      this.track(callback, false, ["i", i], ["m", m]);
       for (let j = i + 1; j < n; j++) {
-        this.track(callback);
+        this.track(callback, false, ["j", j]);
         if (a[j] < a[m]) {
           m = j;
-          this.track(callback);
+          this.track(callback, false, ["m", m]);
         }
       }
       this.track(callback);
@@ -7392,12 +7424,12 @@ class Algo {
    * @param {CallBack} callback
    */
   bubbleSort(a, callback) {
-    this.track(callback, true);
+    this.track(callback, true, ["i", 0], ["j", 0], ["j+1", 0]);
     const n = a.length;
     for (let i = n - 1; i > 0; i--) {
-      this.track(callback);
+      this.track(callback, false, ["i", i]);
       for (let j = 0; j < i; j++) {
-        this.track(callback);
+        this.track(callback, false, ["j", j], ["j+1", j + 1]);
         if (a[j] > a[j + 1]) {
           this.track(callback);
           this.swap(a, j, j + 1, callback);
@@ -7482,17 +7514,26 @@ class Algo {
    * 追踪代码
    * @param callback
    * @param isStartLine 是否开始行
+   * @param pointNameIndexes 指针名和指针下标元组数组
    * @private
    */
-  track(callback, isStartLine = false) {
+  track(callback, isStartLine = false, ...pointNameIndexes) {
     var _a;
-    let curLineStr = ((_a = new Error().stack) == null ? void 0 : _a.split("\n")[2].split(":").slice(-2, -1)[0]) ?? "0";
-    let curLine = parseInt(curLineStr);
+    const curLineStr = ((_a = new Error().stack) == null ? void 0 : _a.split("\n")[2].split(":").slice(-2, -1)[0]) ?? "0";
+    const curLine = parseInt(curLineStr);
     if (isStartLine) {
       this.startLine = curLine;
+      const pointNames = [];
+      pointNameIndexes.forEach((pointNameIndex) => {
+        pointNames.push(pointNameIndex[0]);
+      });
+      callback.addPoints(...pointNames);
     }
     let executeLine = curLine - this.startLine + 2;
     callback.onTrack(executeLine);
+    pointNameIndexes.forEach((pointNameIndex) => {
+      callback.onPointMove(pointNameIndex[0], pointNameIndex[1]);
+    });
     return executeLine;
   }
   /**
@@ -7502,8 +7543,11 @@ class Algo {
   filterCharacter(sourceCode) {
     let lines = sourceCode.split("\n");
     for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes(", callback")) {
+        lines[i] = lines[i].replace(", callback", "");
+      }
       if (i == 0) {
-        lines[i] = "public " + lines[i];
+        lines[i] = "function " + lines[i];
         continue;
       }
       if (lines[i].includes("this.")) {
@@ -7538,24 +7582,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
       _sourceCode.value = algo.getSourceCode(algorithmName);
     }
     function animateSort(algorithmName, a) {
-      const callback = new CallBack();
-      switch (algorithmName) {
-        case "selectionSort":
-          algo.selectionSort(a, callback);
-          break;
-        case "bubbleSort":
-          algo.bubbleSort(a, callback);
-          break;
-        case "insertionSort":
-          algo.insertionSort(a, callback);
-          break;
-        case "quickSort":
-          algo.quickSort(a, 0, a.length - 1, callback);
-          break;
-        default:
-          return;
-      }
-      callback.play();
+      algo.animateSort(algorithmName, a);
     }
     function highlightLineNumber(lineNumber) {
       _highlightLineNumber.value = lineNumber;

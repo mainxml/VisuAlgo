@@ -32,7 +32,6 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
     /** 是否首次播放 */
     private var isFirstPlay = true
 
-
     /** 当前动画跟踪步骤 */
     private var curTrackStep = 0
     /** 动画跟踪步骤列表 */
@@ -201,10 +200,16 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
             return
         }
 
+        // 记录每步骤的视图位置数据
         val elementPoints = mutableListOf<PointF>()
         visualArray.forEach { element ->
             if (element is VisualElement) {
-                elementPoints.add(PointF(element.x, element.y))
+                val x = element.x
+                var y = element.y
+                if (element.type == VisualElement.Type.Point) {
+                    y = element.value.toFloat() // 指针元素时改为记录指针值
+                }
+                elementPoints.add(PointF(x, y))
             }
         }
         trackStepList.add(TrackStep(lazyAnimator.codeLineNumber, animationIndex, elementPoints))
@@ -228,8 +233,15 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
         val elementPoints = trackStep.elementPoints
         elementPoints.forEachIndexed { index, point ->
             val element = visualArray[index]
-            element.x = point.x
-            element.y = point.y
+            if (element is VisualElement) {
+                element.x = point.x
+                //element.y = point.y
+                if (element.type == VisualElement.Type.Point) {
+                    element.value = point.y.toInt()
+                } else {
+                    element.y = point.y
+                }
+            }
         }
 
         callJsHighlightLineNumber(trackStep.codeLineNumber)
@@ -349,12 +361,13 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
      * - i 指针新下标
      */
     fun pointMove(pointName: String, i: Int) {
-        val targetPointIndex = pointViewIndexMap[pointName] ?: return
-        val targetPoint = visualArray[targetPointIndex] as VisualElement
         animatorQueue.offer(LazyAnimator({
-            val moveCount = targetPoint.value - i
-            targetPoint.value = i
-            visualArray.move(targetPointIndex, moveCount)
+            val pointViewIndex = pointViewIndexMap[pointName]
+                ?: throw IllegalArgumentException("不存在$pointName")
+            val pointView = visualArray[pointViewIndex] as VisualElement
+            val moveCount = pointView.value - i
+            pointView.value = i
+            visualArray.move(pointViewIndex, moveCount)
         }))
     }
 
@@ -372,6 +385,19 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
         }, codeLineNumber))
     }
 
+    /**
+     * 添加指针元素视图
+     * @param names Array<out String>
+     */
+    fun addPoints(vararg names: String) {
+        visualArray.post {
+            names.forEach { name ->
+                visualArray.addView(VisualElement.createPoint(visualArray.context, name))
+                pointViewIndexMap[name] = visualArray.childCount - 1
+            }
+        }
+    }
+
     private fun playTogether(vararg animators: Animator): Animator {
         return AnimatorSet().apply {
             playTogether(*animators)
@@ -379,18 +405,6 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
     }
 
     private fun getViewIndex(i: Int) = viewIndexMap[i] as Int
-
-    /**
-     * 添加指针元素视图
-     * @param names Array<out String>
-     */
-    private fun addPoints(vararg names: String) {
-        val context = visualArray.context
-        names.forEach { name ->
-            visualArray.addView(VisualElement.createPoint(context, name))
-            pointViewIndexMap[name] = visualArray.childCount - 1
-        }
-    }
 
     /**
      * 调用js的显示源码函数
