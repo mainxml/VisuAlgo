@@ -178,7 +178,6 @@ class VisualArray @JvmOverloads constructor(
         val t3 = t2 - edgePadding - ch - edgePadding - edgePadding + strokeWidth / 2
         val b = t3 + edgePadding + ch + edgePadding - strokeWidth / 2
         canvas.drawRoundRect(l, t3, r, b, corner, corner, paint)
-        //canvas.drawColor("#80CCCCCC".toColorInt())
     }
     // endregion
 

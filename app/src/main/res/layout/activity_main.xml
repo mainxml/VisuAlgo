@@ -69,6 +69,13 @@
                 android:text="快速排序"
                 android:layout_marginStart="8dp" />
 
+            <Button
+                android:id="@+id/binary_tree_activity"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="打开二叉树页"
+                android:layout_marginStart="8dp" />
+
         </com.google.android.flexbox.FlexboxLayout>
 
         <WebView

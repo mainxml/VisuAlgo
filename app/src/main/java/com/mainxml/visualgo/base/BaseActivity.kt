@@ -6,7 +6,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.databinding.ViewDataBinding
 import androidx.lifecycle.ViewModelProvider
-import com.mainxml.visualgo.BR
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -18,7 +17,7 @@ abstract class BaseActivity<VM: BaseViewModel, BD: ViewDataBinding> : AppCompatA
     protected lateinit var vm: VM
 
     /** ViewDataBinding */
-    protected lateinit var binging: BD
+    protected lateinit var binding: BD
 
     /**
      * 页面布局资源id
@@ -52,8 +51,8 @@ abstract class BaseActivity<VM: BaseViewModel, BD: ViewDataBinding> : AppCompatA
      * 初始化泛型ViewDataBinding
      */
     private fun initViewDataBinding() {
-        binging = DataBindingUtil.setContentView(this, getLayoutId())
-        binging.lifecycleOwner = this
+        binding = DataBindingUtil.setContentView(this, getLayoutId())
+        binding.lifecycleOwner = this
         //binging.setVariable(BR.vm, vm)
     }
 }

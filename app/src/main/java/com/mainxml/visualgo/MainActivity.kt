@@ -33,43 +33,48 @@ class MainActivity : BaseActivity<BaseViewModel, ActivityMainBinding>() {
         val a = intArrayOf(5, 4, 3, 2, 1)
 
         // 动画师
-        animator = SortAnimator(binging.array, binging.webView)
+        animator = SortAnimator(binding.array, binding.webView)
         // 显示数组
         animator.showArray(a)
 
         // 点击重置
-        binging.reset.setOnClickListener {
+        binding.reset.setOnClickListener {
             animator.resetSort()
         }
         // 点击上一步
-        binging.previousStep.setOnClickListener {
+        binding.previousStep.setOnClickListener {
             animator.previousStep()
         }
         // 点击下一步
-        binging.nextStep.setOnClickListener {
+        binding.nextStep.setOnClickListener {
             animator.nextStep()
         }
 
+        // 点击打开二叉树页
+        binding.binaryTreeActivity.setOnClickListener {
+            BinaryTreeActivity.launch(this)
+        }
+
         // 选择排序
-        binging.selectionSort.setOnClickListener {
+        binding.selectionSort.setOnClickListener {
             animator.selectionSort(a)
         }
         // 冒泡排序
-        binging.bubbleSort.setOnClickListener {
+        binding.bubbleSort.setOnClickListener {
             animator.bubbleSort(a)
         }
         // 插入排序
-        binging.insertionSort.setOnClickListener {
+        binding.insertionSort.setOnClickListener {
             animator.insertionSort(a)
         }
         // 快速排序
-        binging.quickSort.setOnClickListener {
+        binding.quickSort.setOnClickListener {
             animator.quickSort(a)
         }
     }
 
     private fun initWebView() {
-        binging.webView.apply {
+        binding.webView.apply {
             // 开启js
             @SuppressLint("SetJavaScriptEnabled")
             settings.javaScriptEnabled = true
@@ -88,20 +93,20 @@ class MainActivity : BaseActivity<BaseViewModel, ActivityMainBinding>() {
 
     override fun onResume() {
         super.onResume()
-        binging.webView.onResume()
-        binging.webView.resumeTimers()
+        binding.webView.onResume()
+        binding.webView.resumeTimers()
     }
 
     override fun onPause() {
         super.onPause()
-        binging.webView.onPause()
-        binging.webView.pauseTimers()
+        binding.webView.onPause()
+        binding.webView.pauseTimers()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        binging.webView.stopLoading()
-        (binging.webView.parent as ViewGroup).removeView(binging.webView)
-        binging.webView.destroy()
+        binding.webView.stopLoading()
+        (binding.webView.parent as ViewGroup).removeView(binding.webView)
+        binding.webView.destroy()
     }
 }
