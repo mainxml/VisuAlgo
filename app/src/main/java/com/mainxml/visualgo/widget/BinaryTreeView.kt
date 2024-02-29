@@ -23,10 +23,10 @@ class BinaryTreeView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    /** 完全二叉树数组 */
-    private var treeArray: IntArray? = null
-    /** 二叉树的深度，根节点为0 */
-    private var treeDepth = 0
+    /** 二叉树节点数组 */
+    private var treeArray = intArrayOf()
+    /** 二叉树的深度，根节点为0开始 */
+    private var depth = 0
 
     /** 节点半径 */
     private val radius = 12f.dp
@@ -39,21 +39,19 @@ class BinaryTreeView @JvmOverloads constructor(
 
     fun setTreeArray(treeArray: IntArray) {
         this.treeArray = treeArray
-        treeDepth = log2(treeArray.size.toDouble()).toInt()
-        // 最大深度的最多节点数
-        val maxNodesInMaxDepth = 2.0.pow(treeDepth).toInt()
+        depth = log2(treeArray.size.toDouble()).toInt()
 
+        // 最大深度的最多节点数
+        val maxNodesInMaxDepth = 2.0.pow(depth).toInt()
         // 所有节点所需要的最大宽度
         maxWidth = (
             maxNodesInMaxDepth * radius * 2 +
             (maxNodesInMaxDepth + 1) * horizontalSpacing
         ).toInt()
-
         // 最大不超过屏幕宽度
         val screenWidth = getDisplayMetrics().widthPixels
         if (maxWidth > screenWidth) {
             maxWidth = screenWidth
-
             horizontalSpacing = (
                 (maxWidth - (maxNodesInMaxDepth * radius * 2)) / (maxNodesInMaxDepth + 1)
             ).toInt()
@@ -62,7 +60,31 @@ class BinaryTreeView @JvmOverloads constructor(
         invalidate()
     }
 
+    /** 获取二叉树节点数组 */
     fun getTreeArray() = treeArray
+
+    /**
+     * 添加节点
+     * @param value Int?
+     */
+    fun add(value: Int? = null) {
+        val v = value ?: run {
+            if (treeArray.isEmpty()) 0 else treeArray.last() + 1
+        }
+        setTreeArray(treeArray.toMutableList().apply { add(v) }.toIntArray())
+    }
+
+    private fun leftChildIndex(i: Int): Int {
+        return 2 * i + 1
+    }
+
+    private fun rightChildIndex(i: Int): Int {
+        return 2 * i + 2
+    }
+
+    // ---------------------------------------------------------------------
+    //                                  绘制
+    // ---------------------------------------------------------------------
 
     private var nodePaint: Paint = Paint().apply {
         isAntiAlias = true
@@ -83,45 +105,43 @@ class BinaryTreeView @JvmOverloads constructor(
     private val fontMetrics = textPaint.fontMetrics
     private val path = Path()
 
-    private val currentNodePoint = PointF()
-    private val leftChildNodePoint = PointF()
-    private val rightChildNodePoint = PointF()
+    private val curNodePoint = PointF()
+    private val leftNodePoint = PointF()
+    private val rightNodePoint = PointF()
 
     override fun onDraw(canvas: Canvas) {
-        val tree = treeArray
-        if (tree == null || tree.isEmpty()) {
+        if (treeArray.isEmpty()) {
             return
         }
-        val indices = tree.indices
-        for (i in indices) {
-            calculateNodePoint(i, currentNodePoint)
+        val indices = treeArray.indices
+        for (index in indices) {
             // 绘制当前节点
-            canvas.drawCircle(currentNodePoint.x, currentNodePoint.y, radius, nodePaint)
-
+            drawNode(canvas, index, curNodePoint)
             // 绘制左子节点连接线
-            drawNodeLine(canvas, currentNodePoint, leftChildIndex(i), leftChildNodePoint, indices)
+            drawNodeLine(canvas, leftChildIndex(index), leftNodePoint)
             // 绘制右子节点连接线
-            drawNodeLine(canvas, currentNodePoint, rightChildIndex(i), rightChildNodePoint, indices)
-
-            // 绘制当前节点值为文字
-            val text = tree[i].toString()
-            val textWidth = textPaint.measureText(text)
-            val tx = currentNodePoint.x - textWidth / 2
-            val ty = currentNodePoint.y - (fontMetrics.ascent + fontMetrics.descent) / 2
-            canvas.drawText(text, tx, ty, textPaint)
+            drawNodeLine(canvas, rightChildIndex(index), rightNodePoint)
         }
     }
 
-    private fun drawNodeLine(
-        canvas: Canvas, currentNodePoint: PointF, childIndex: Int, childNodePoint: PointF,
-        indices: IntRange
-    ) {
-        if (childIndex in indices) {
-            calculateNodePoint(childIndex, childNodePoint)
-            val radian = calculateRadian(currentNodePoint, childNodePoint)
+    private fun drawNode(canvas: Canvas, index: Int, curNodePoint: PointF) {
+        calculateNodePoint(index, curNodePoint)
+        canvas.drawCircle(curNodePoint.x, curNodePoint.y, radius, nodePaint)
 
-            val sx = currentNodePoint.x + radius * cos(radian)
-            val sy = currentNodePoint.y + radius * sin(radian)
+        val text = treeArray[index].toString()
+        val textWidth = textPaint.measureText(text)
+        val tx = curNodePoint.x - textWidth / 2
+        val ty = curNodePoint.y - (fontMetrics.ascent + fontMetrics.descent) / 2
+        canvas.drawText(text, tx, ty, textPaint)
+    }
+
+    private fun drawNodeLine(canvas: Canvas, childIndex: Int, childNodePoint: PointF) {
+        if (childIndex in treeArray.indices) {
+            calculateNodePoint(childIndex, childNodePoint)
+            val radian = calculateRadian(curNodePoint, childNodePoint)
+
+            val sx = curNodePoint.x + radius * cos(radian)
+            val sy = curNodePoint.y + radius * sin(radian)
             val ex = childNodePoint.x
             val ey = childNodePoint.y - radius
 
@@ -132,24 +152,16 @@ class BinaryTreeView @JvmOverloads constructor(
         }
     }
 
-    private fun leftChildIndex(i: Int): Int {
-        return 2 * i + 1
-    }
+    private fun calculateNodePoint(index: Int, nodePoint: PointF) {
+        val curDepth = log2(index + 1.0).toInt()
+        val curDepthMaxNodeCount = 2.0.pow(curDepth).toInt()
+        val parentDepthMaxIndex = 2.0.pow(curDepth).toInt() - 1
 
-    private fun rightChildIndex(i: Int): Int {
-        return 2 * i + 2
-    }
-
-    private fun calculateNodePoint(i: Int, nodePoint: PointF) {
-        val depth = log2(i + 1.0).toInt()
-        val depthMaxNodeCount = 2.0.pow(depth).toInt() // 当前深度最大节点数量 2 ^ depth
-        val parentDepthMaxIndex = 2.0.pow(depth).toInt() - 1
-
-        val nodeWidth = maxWidth / depthMaxNodeCount
-        val relativeIndex = (i + 1) - parentDepthMaxIndex
+        val nodeWidth = maxWidth / curDepthMaxNodeCount
+        val relativeIndex = (index + 1) - parentDepthMaxIndex
 
         val x = (nodeWidth * relativeIndex - nodeWidth / 2).toFloat()
-        val y = (depth + 1f) * verticalSpacing
+        val y = (curDepth + 1f) * verticalSpacing
 
         nodePoint.x = x
         nodePoint.y = y

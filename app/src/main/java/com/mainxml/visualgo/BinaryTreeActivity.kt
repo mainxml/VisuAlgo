@@ -27,11 +27,7 @@ class BinaryTreeActivity : BaseActivity<BaseViewModel, ActivityBinaryTreeBinding
         binding.binaryTree.setTreeArray(binaryTreeArray)
 
         binding.binaryTree.setOnClickListener {
-            binding.binaryTree.setTreeArray(
-                binding.binaryTree.getTreeArray()!!.toMutableList().apply {
-                    add(binding.binaryTree.getTreeArray()!!.last() + 1)
-                }.toIntArray()
-            )
+            binding.binaryTree.add()
         }
     }
 }
