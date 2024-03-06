@@ -3,8 +3,6 @@ package com.mainxml.visualgo.widget
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.RectF
-import android.icu.util.MeasureUnit.POINT
 import android.util.AttributeSet
 import android.view.View
 import androidx.annotation.ColorInt
@@ -20,11 +18,11 @@ class VisualElement @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     enum class Type {
-        Element, Index, Point
+        Element, Index, Point, TreeNode
     }
 
     companion object {
-        fun create(context: Context, value: Int): VisualElement {
+        fun createElement(context: Context, value: Int): VisualElement {
             return VisualElement(context).apply {
                 type = Type.Element
                 this.value = value
@@ -39,9 +37,16 @@ class VisualElement @JvmOverloads constructor(
         }
 
         fun createPoint(context: Context, name: String): VisualElement {
-            return create(context, 0).apply {
+            return createElement(context, 0).apply {
                 type = Type.Point
                 tag = name
+            }
+        }
+
+        fun createTreeNode(context: Context, value: Int): VisualElement {
+            return VisualElement(context).apply {
+                type = Type.TreeNode
+                this.value = value
             }
         }
     }
@@ -61,49 +66,40 @@ class VisualElement @JvmOverloads constructor(
             invalidate()
         }
 
-    private val defaultSize: Int = if (isInEditMode) 72 else 24.dp
-    private val textSize: Float = if (isInEditMode) 42f else 14.dp.toFloat()
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val rectF = RectF()
+    /**
+     * 设置半径
+     * @param radius Float
+     */
+    fun setRadius(radius: Int) {
+        if (type != Type.TreeNode) {
+            return
+        }
+        size = radius * 2
+        invalidate()
+    }
+
+    /** 元素大小 */
+    private var size: Int = if (isInEditMode) 72 else 24.dp
+
+    private val paint = Paint().apply {
+        isAntiAlias = true
+        textSize = if (isInEditMode) 42f else 14f.dp
+    }
     private val fontMetrics = paint.fontMetrics
 
     /**
      * 测量
-     *
-     * 只需为wrap_content时提供默认大小。
+     * 只为wrap_content提供默认大小。
      */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // 设置固定大小时可直接用setMeasuredDimension()，resolveSize()方法可以防止大小超出父类
-        /* val measuredWidth = resolveSize(defaultSize, widthMeasureSpec)
-        val measuredHeight = resolveSize(defaultSize, heightMeasureSpec)
-        setMeasuredDimension(measuredWidth, measuredHeight) */
-
-        val widthSpecMode = MeasureSpec.getMode(widthMeasureSpec)
-        val heightSpecMode = MeasureSpec.getMode(heightMeasureSpec)
-
-        val widthSpecSize = MeasureSpec.getSize(widthMeasureSpec)
-        val heightSpecSize = MeasureSpec.getSize(heightMeasureSpec)
-
-        when {
-            widthSpecMode == MeasureSpec.AT_MOST && heightSpecMode == MeasureSpec.AT_MOST -> {
-                setMeasuredDimension(defaultSize, defaultSize)
-            }
-            widthSpecMode == MeasureSpec.AT_MOST -> {
-                setMeasuredDimension(defaultSize, heightSpecSize)
-            }
-            heightSpecMode == MeasureSpec.AT_MOST -> {
-                setMeasuredDimension(widthSpecSize, defaultSize)
-            }
-            else -> {
-                super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-            }
-        }
+        val measuredWidth = resolveSize(size, widthMeasureSpec)
+        val measuredHeight = resolveSize(size, heightMeasureSpec)
+        setMeasuredDimension(measuredWidth, measuredHeight)
     }
 
     /**
      * 布局
-     *
-     * 此方法用于ViewGroup布局子View。当前是子View，直接留空。
+     * 此方法用于ViewGroup布局子View，子View留空
      */
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         /* no-op */
@@ -111,37 +107,28 @@ class VisualElement @JvmOverloads constructor(
 
     /**
      * 绘制
-     *
-     * 需要处理padding
      */
     override fun onDraw(canvas: Canvas) {
-        // 绘制矩形
-        val dw = width - paddingLeft - paddingRight
-        val dh = height - paddingTop - paddingBottom
-        rectF.set(
-            paddingLeft.toFloat(),
-            paddingTop.toFloat(),
-            (paddingLeft + dw).toFloat(),
-            (paddingTop + dh).toFloat()
-        )
-        paint.color = color
+        // 根据类型绘制图形
         paint.color = when (type) {
-            Type.Element -> color
+            Type.Element, Type.TreeNode -> color
             Type.Index -> MyColor.GRAY
             Type.Point -> MyColor.CYAN
         }
-        canvas.drawRect(rectF, paint)
+        if (type != Type.TreeNode) {
+            // 绘制矩形
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+        } else {
+            // 绘制圆形
+            canvas.drawCircle(width / 2f, height / 2f, size / 2f, paint)
+        }
 
         // 绘制文字
-        val text = when (type) {
-            Type.Element, Type.Index -> value.toString()
-            Type.Point -> tag.toString()
-        }
-        paint.textSize = textSize
         paint.color = MyColor.WHITE
+        val text = if (type == Type.Point) { tag } else { value }.toString()
         val textWidth = paint.measureText(text)
-        val tx = rectF.width() / 2 - textWidth / 2
-        val ty = rectF.centerY() - fontMetrics.top // fontMetrics.top是基线到顶部的距离，负数
+        val tx = width / 2f - textWidth / 2
+        val ty = height / 2f - (fontMetrics.ascent + fontMetrics.descent) / 2
         canvas.drawText(text, tx, ty, paint)
     }
 }

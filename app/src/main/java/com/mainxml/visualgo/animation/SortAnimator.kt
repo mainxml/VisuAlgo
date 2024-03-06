@@ -69,7 +69,7 @@ class SortAnimator(private val visualArray: VisualArray, private val webView: We
 
         // 创建对应输入数组的元素
         a.forEachIndexed { index, value ->
-            visualArray.addView(VisualElement.create(context, value))
+            visualArray.addView(VisualElement.createElement(context, value))
             // 初始化算法下标对子View实际下标的映射
             viewIndexMap[index] = index
         }

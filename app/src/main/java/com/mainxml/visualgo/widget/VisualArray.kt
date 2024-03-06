@@ -161,6 +161,9 @@ class VisualArray @JvmOverloads constructor(
                     child.layout(pointLeft, t1, cr, cb)
                     //pointLeft = cr + elementPadding // 指针初始都在0的位置
                 }
+                VisualElement.Type.TreeNode -> {
+                    throw IllegalArgumentException("不支持树节点类型")
+                }
             }
         }
     }
