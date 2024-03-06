@@ -6,10 +6,11 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.PointF
 import android.util.AttributeSet
-import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.children
 import com.mainxml.visualgo.util.MyColor
 import com.mainxml.visualgo.util.dp
-import com.mainxml.visualgo.util.getDisplayMetrics
+import com.mainxml.visualgo.util.getScreenWidth
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.log2
@@ -21,43 +22,35 @@ import kotlin.math.sin
  */
 class BinaryTreeView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr) {
+) : ViewGroup(context, attrs, defStyleAttr) {
 
     /** 二叉树节点数组 */
     private var treeArray = intArrayOf()
-    /** 二叉树的深度，根节点为0开始 */
+    /** 二叉树深度，根节点从0开始 */
     private var depth = 0
 
-    /** 节点半径 */
-    private val radius = 12f.dp
-    /** 所有节点所需要的最大宽度 */
-    private var maxWidth = 0
-    /** 水平间距 */
-    private var horizontalSpacing = 6.dp
-    /** 垂直间距 */
-    private val verticalSpacing = 40.dp
+    init {
+        // 用于绘制二叉树之间的连接线
+        setWillNotDraw(false)
 
+        // 预览
+        if (isInEditMode) {
+            setTreeArray(intArrayOf(1, 2, 3))
+        }
+    }
+
+    /**
+     * 设置二叉树
+     * @param treeArray IntArray
+     */
     fun setTreeArray(treeArray: IntArray) {
         this.treeArray = treeArray
         depth = log2(treeArray.size.toDouble()).toInt()
 
-        // 最大深度的最多节点数
-        val maxNodesInMaxDepth = 2.0.pow(depth).toInt()
-        // 所有节点所需要的最大宽度
-        maxWidth = (
-            maxNodesInMaxDepth * radius * 2 +
-            (maxNodesInMaxDepth + 1) * horizontalSpacing
-        ).toInt()
-        // 最大不超过屏幕宽度
-        val screenWidth = getDisplayMetrics().widthPixels
-        if (maxWidth > screenWidth) {
-            maxWidth = screenWidth
-            horizontalSpacing = (
-                (maxWidth - (maxNodesInMaxDepth * radius * 2)) / (maxNodesInMaxDepth + 1)
-            ).toInt()
+        removeAllViews()
+        treeArray.forEach { value ->
+            addView(VisualElement.createTreeNode(context, value))
         }
-
-        invalidate()
     }
 
     /** 获取二叉树节点数组 */
@@ -86,62 +79,89 @@ class BinaryTreeView @JvmOverloads constructor(
     //                                  绘制
     // ---------------------------------------------------------------------
 
-    private var nodePaint: Paint = Paint().apply {
-        isAntiAlias = true
-        color = MyColor.GREEN
-        style = Paint.Style.FILL
-    }
+    /** 所有节点所需要的最大绘制宽度 */
+    private var maxDrawWidth = 0
+    /** 水平间距 */
+    private var horizontalSpacing = 6.dp
+    /** 垂直间距 */
+    private val verticalSpacing = 40.dp
+
     private var linePaint: Paint = Paint().apply {
         isAntiAlias = true
         color = MyColor.GRAY
         style = Paint.Style.STROKE
         strokeWidth = 2f.dp
     }
-    private var textPaint: Paint = Paint().apply {
-        isAntiAlias = true
-        color = MyColor.WHITE
-        textSize = 12f.dp
-    }
-    private val fontMetrics = textPaint.fontMetrics
+    private val curNodePoint = PointF()
+    private val childNodePoint = PointF()
     private val path = Path()
 
-    private val curNodePoint = PointF()
-    private val leftNodePoint = PointF()
-    private val rightNodePoint = PointF()
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        children.forEach {
+            if (it !is VisualElement) {
+                throw IllegalArgumentException("子View必须为VisualElement类型")
+            }
+        }
+
+        // 测量所有子View
+        measureChildren(widthMeasureSpec, heightMeasureSpec)
+        val childSize = getChildAt(0).measuredWidth
+
+        // 最大深度的最多节点数
+        val maxDepthMaxNodeCount = 2.0.pow(depth).toInt()
+        // 所有节点所需要的最大宽度
+        maxDrawWidth = maxDepthMaxNodeCount * childSize +
+                (maxDepthMaxNodeCount + 1) * horizontalSpacing
+
+        // 最大不超过屏幕宽度
+        val screenWidth = getScreenWidth()
+        if (maxDrawWidth > screenWidth) {
+            maxDrawWidth = screenWidth
+            horizontalSpacing = (maxDrawWidth - (maxDepthMaxNodeCount * childSize)) /
+                    (maxDepthMaxNodeCount + 1)
+        }
+
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+    }
+
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+        val childSize = getChildAt(0).measuredWidth
+        val radius = childSize / 2
+
+        children.forEachIndexed { index, child ->
+            calculateNodePoint(index, childNodePoint)
+            val cl = (childNodePoint.x - radius).toInt()
+            val ct = (childNodePoint.y - radius).toInt()
+            val cr = cl + childSize
+            val cb = ct + childSize
+            child.layout(cl, ct, cr, cb)
+        }
+    }
 
     override fun onDraw(canvas: Canvas) {
         if (treeArray.isEmpty()) {
             return
         }
-        val indices = treeArray.indices
-        for (index in indices) {
-            // 绘制当前节点
-            drawNode(canvas, index, curNodePoint)
+        for (index in treeArray.indices) {
+            // 计算当前节点位置
+            calculateNodePoint(index, curNodePoint)
             // 绘制左子节点连接线
-            drawNodeLine(canvas, leftChildIndex(index), leftNodePoint)
+            drawNodeLine(canvas, leftChildIndex(index))
             // 绘制右子节点连接线
-            drawNodeLine(canvas, rightChildIndex(index), rightNodePoint)
+            drawNodeLine(canvas, rightChildIndex(index))
         }
     }
 
-    private fun drawNode(canvas: Canvas, index: Int, curNodePoint: PointF) {
-        calculateNodePoint(index, curNodePoint)
-        canvas.drawCircle(curNodePoint.x, curNodePoint.y, radius, nodePaint)
+    private fun drawNodeLine(canvas: Canvas, childIndex: Int) {
+        val childSize = getChildAt(0).measuredWidth
+        val radius = childSize / 2
 
-        val text = treeArray[index].toString()
-        val textWidth = textPaint.measureText(text)
-        val tx = curNodePoint.x - textWidth / 2
-        val ty = curNodePoint.y - (fontMetrics.ascent + fontMetrics.descent) / 2
-        canvas.drawText(text, tx, ty, textPaint)
-    }
-
-    private fun drawNodeLine(canvas: Canvas, childIndex: Int, childNodePoint: PointF) {
         if (childIndex in treeArray.indices) {
             calculateNodePoint(childIndex, childNodePoint)
-            val radian = calculateRadian(curNodePoint, childNodePoint)
+            val angle = calculateAngle(curNodePoint, childNodePoint)
 
-            val sx = curNodePoint.x + radius * cos(radian)
-            val sy = curNodePoint.y + radius * sin(radian)
+            val sx = curNodePoint.x + radius * cos(angle)
+            val sy = curNodePoint.y + radius * sin(angle)
             val ex = childNodePoint.x
             val ey = childNodePoint.y - radius
 
@@ -157,7 +177,7 @@ class BinaryTreeView @JvmOverloads constructor(
         val curDepthMaxNodeCount = 2.0.pow(curDepth).toInt()
         val parentDepthMaxIndex = 2.0.pow(curDepth).toInt() - 1
 
-        val nodeWidth = maxWidth / curDepthMaxNodeCount
+        val nodeWidth = maxDrawWidth / curDepthMaxNodeCount
         val relativeIndex = (index + 1) - parentDepthMaxIndex
 
         val x = (nodeWidth * relativeIndex - nodeWidth / 2).toFloat()
@@ -170,7 +190,7 @@ class BinaryTreeView @JvmOverloads constructor(
     /**
      * 计算两点之间和X轴的角度，单位为弧度
      */
-    private fun calculateRadian(point1: PointF, point2: PointF): Float {
+    private fun calculateAngle(point1: PointF, point2: PointF): Float {
         return atan2((point2.y - point1.y), (point2.x - point1.x))
     }
 }

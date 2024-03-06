@@ -22,4 +22,4 @@ val Float.dp
         Resources.getSystem().displayMetrics
     )
 
-fun getDisplayMetrics(): DisplayMetrics = Resources.getSystem().displayMetrics
+fun getScreenWidth() = Resources.getSystem().displayMetrics.widthPixels

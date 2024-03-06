@@ -57,7 +57,7 @@ class VisualArray @JvmOverloads constructor(
                     addView(VisualElement(context).apply { value = it })
                 }
             } else {
-                setMeasuredDimension(100, 100)
+                setMeasuredDimension(0, 0)
             }
             return
         }
