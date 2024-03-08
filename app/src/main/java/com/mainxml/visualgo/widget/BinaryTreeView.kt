@@ -143,8 +143,12 @@ class BinaryTreeView @JvmOverloads constructor(
             return
         }
         for (index in treeArray.indices) {
-            // 计算当前节点位置
-            calculateNodePoint(index, curNodePoint)
+            // 获取当前节点坐标位置
+            //calculateNodePoint(index, curNodePoint)
+            val nodeView = getChildAt(index) as VisualElement
+            curNodePoint.x = nodeView.x + nodeView.measuredWidth / 2f
+            curNodePoint.y = nodeView.y + nodeView.measuredHeight / 2f
+
             // 绘制左子节点连接线
             drawNodeLine(canvas, leftChildIndex(index))
             // 绘制右子节点连接线
@@ -157,7 +161,12 @@ class BinaryTreeView @JvmOverloads constructor(
         val radius = childSize / 2
 
         if (childIndex in treeArray.indices) {
-            calculateNodePoint(childIndex, childNodePoint)
+            // 获取子节点坐标位置
+            //calculateNodePoint(childIndex, childNodePoint)
+            val nodeView = getChildAt(childIndex) as VisualElement
+            childNodePoint.x = nodeView.x + nodeView.measuredWidth / 2f
+            childNodePoint.y = nodeView.y + nodeView.measuredHeight / 2f
+
             val angle = calculateAngle(curNodePoint, childNodePoint)
 
             val sx = curNodePoint.x + radius * cos(angle)
