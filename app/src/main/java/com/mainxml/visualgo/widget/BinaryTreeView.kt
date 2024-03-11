@@ -1,5 +1,7 @@
 package com.mainxml.visualgo.widget
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -26,8 +28,12 @@ class BinaryTreeView @JvmOverloads constructor(
 
     /** 二叉树节点数组 */
     private var treeArray = intArrayOf()
+
     /** 二叉树深度，根节点从0开始 */
     private var depth = 0
+
+    /** 是否播放动画 */
+    private var playAnimation = false
 
     init {
         // 用于绘制二叉树之间的连接线
@@ -61,6 +67,10 @@ class BinaryTreeView @JvmOverloads constructor(
      * @param value Int?
      */
     fun add(value: Int? = null) {
+        if (playAnimation) {
+            return
+        }
+        playAnimation = true
         val v = value ?: run {
             if (treeArray.isEmpty()) 0 else treeArray.last() + 1
         }
@@ -76,7 +86,7 @@ class BinaryTreeView @JvmOverloads constructor(
     }
 
     // ---------------------------------------------------------------------
-    //                                  绘制
+    //                             绘制、布局、绘制
     // ---------------------------------------------------------------------
 
     /** 所有节点所需要的最大绘制宽度 */
@@ -96,6 +106,9 @@ class BinaryTreeView @JvmOverloads constructor(
     private val childNodePoint = PointF()
     private val path = Path()
 
+    /**
+     * 测量
+     */
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         children.forEach {
             if (it !is VisualElement) {
@@ -105,11 +118,12 @@ class BinaryTreeView @JvmOverloads constructor(
 
         // 测量所有子View
         measureChildren(widthMeasureSpec, heightMeasureSpec)
+        // 获取测量后的子View大小，每个子View尺寸都相同
         val childSize = getChildAt(0).measuredWidth
 
-        // 最大深度的最多节点数
+        // 计算最大深度最多节点数
         val maxDepthMaxNodeCount = 2.0.pow(depth).toInt()
-        // 所有节点所需要的最大宽度
+        // 计算所有节点所需的最大绘制宽度
         maxDrawWidth = maxDepthMaxNodeCount * childSize +
                 (maxDepthMaxNodeCount + 1) * horizontalSpacing
 
@@ -124,20 +138,54 @@ class BinaryTreeView @JvmOverloads constructor(
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 
+    /**
+     * 布局子View
+     */
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val childSize = getChildAt(0).measuredWidth
         val radius = childSize / 2
 
         children.forEachIndexed { index, child ->
             calculateNodePoint(index, childNodePoint)
-            val cl = (childNodePoint.x - radius).toInt()
-            val ct = (childNodePoint.y - radius).toInt()
+
+            val cl: Int
+            val ct: Int
+            if (playAnimation && index == childCount - 1) {
+                // 最后一项时做点动画，起始位置放远点
+                cl = this.width / 2
+                ct = (childNodePoint.y - radius).toInt() + verticalSpacing
+            } else {
+                cl = (childNodePoint.x - radius).toInt()
+                ct = (childNodePoint.y - radius).toInt()
+            }
             val cr = cl + childSize
             val cb = ct + childSize
             child.layout(cl, ct, cr, cb)
+
+            // 最后一项时做点动画，移动回对应的位置
+            if (playAnimation && index == childCount - 1) {
+                val targetX = childNodePoint.x - radius
+                val targetY = childNodePoint.y - radius
+                postDelayed({
+                    child.animate().x(targetX).y(targetY)
+                        .setUpdateListener {
+                            // 同时重绘连接线
+                            this@BinaryTreeView.invalidate()
+                        }
+                        .setListener(object : AnimatorListenerAdapter() {
+                            override fun onAnimationEnd(animation: Animator) {
+                                playAnimation = false
+                            }
+                        })
+                        .start()
+                }, 300)
+            }
         }
     }
 
+    /**
+     * 绘制节点间的连接线
+     */
     override fun onDraw(canvas: Canvas) {
         if (treeArray.isEmpty()) {
             return
