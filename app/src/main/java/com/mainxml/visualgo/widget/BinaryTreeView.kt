@@ -146,6 +146,7 @@ class BinaryTreeView @JvmOverloads constructor(
         val radius = childSize / 2
 
         children.forEachIndexed { index, child ->
+            // 计算节点坐标位置
             calculateNodePoint(index, childNodePoint)
 
             val cl: Int
@@ -192,7 +193,6 @@ class BinaryTreeView @JvmOverloads constructor(
         }
         for (index in treeArray.indices) {
             // 获取当前节点坐标位置
-            //calculateNodePoint(index, curNodePoint)
             val nodeView = getChildAt(index) as VisualElement
             curNodePoint.x = nodeView.x + nodeView.measuredWidth / 2f
             curNodePoint.y = nodeView.y + nodeView.measuredHeight / 2f
@@ -210,7 +210,6 @@ class BinaryTreeView @JvmOverloads constructor(
 
         if (childIndex in treeArray.indices) {
             // 获取子节点坐标位置
-            //calculateNodePoint(childIndex, childNodePoint)
             val nodeView = getChildAt(childIndex) as VisualElement
             childNodePoint.x = nodeView.x + nodeView.measuredWidth / 2f
             childNodePoint.y = nodeView.y + nodeView.measuredHeight / 2f

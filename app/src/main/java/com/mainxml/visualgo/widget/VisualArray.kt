@@ -28,7 +28,7 @@ class VisualArray @JvmOverloads constructor(
     /** 元素Padding */
     private val elementPadding = if (isInEditMode) 6 else 2.dp
     /** 高度扩大倍速, 用于留空区域显示动画 */
-    private val heightMultiple = 6
+    private val heightMultiple = 8
     /** 子View最高值 */
     private var maxChildHeight = 0
 
@@ -117,49 +117,47 @@ class VisualArray @JvmOverloads constructor(
     }
 
     /**
-     * 布局，形参四个参数是父ViewGroup参考系的位置
-     *
      * 给子View布局位置
      */
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        var elementLeft = paddingLeft + edgePadding
+        var elementLeft = edgePadding
         var indexLeft = elementLeft
         val pointLeft = elementLeft
 
         val ch = maxChildHeight
+        val t1 = height - edgePadding - ch
+        val t2 = t1 - edgePadding - ch
+        val t3 = t2 - edgePadding - ch - edgePadding / 2
+        val t4 = t3 - edgePadding - ch
+
+        var pointCount = 0
+
         children.forEach { child ->
             child as VisualElement
             val cw = child.measuredWidth
-
             when (child.type) {
                 VisualElement.Type.Element -> {
-                    // 在第三层绘制子元素
+                    // 在第四层高度绘制子元素
                     val cl = elementLeft
                     val cr = cl + cw
-                    val t1 = height - paddingBottom - edgePadding - ch
-                    val t2 = t1 - edgePadding - ch
-                    val t3 = t2 - edgePadding - ch - edgePadding
-                    val cb = t3 + ch
-                    child.layout(cl, t3, cr, cb)
+                    val cb = t4 + ch
+                    child.layout(cl, t4, cr, cb)
                     elementLeft = cr + elementPadding
                 }
                 VisualElement.Type.Index -> {
-                    // 在第二层绘制指针元素
+                    // 在第三层高度绘制指针元素
                     val cl = indexLeft
                     val cr = cl + cw
-                    val t1 = height - paddingBottom - edgePadding - ch
-                    val t2 = t1 - edgePadding - ch
-                    val cb = t2 + ch
-                    child.layout(cl, t2, cr, cb)
+                    val cb = t3 + ch
+                    child.layout(cl, t3, cr, cb)
                     indexLeft = cr + elementPadding
                 }
                 VisualElement.Type.Point -> {
-                    // 在最下层绘制下标元素
+                    // 在第一第二层高度绘制指针元素
+                    val ct = if (++pointCount > 2) t1 else t2
                     val cr = pointLeft + cw
-                    val t1 = height - paddingBottom - edgePadding - ch
-                    val cb = t1 + ch
-                    child.layout(pointLeft, t1, cr, cb)
-                    //pointLeft = cr + elementPadding // 指针初始都在0的位置
+                    val cb = ct + ch
+                    child.layout(pointLeft, ct, cr, cb)
                 }
                 VisualElement.Type.TreeNode -> {
                     throw IllegalArgumentException("不支持树节点类型")
@@ -169,18 +167,20 @@ class VisualArray @JvmOverloads constructor(
     }
 
     /**
-     * 绘制
+     * 绘制边框
      */
     override fun onDraw(canvas: Canvas) {
-        // 画边框
-        val l = paddingLeft + strokeWidth / 2f
-        val r = width - paddingRight - strokeWidth / 2f
-        val ch = maxChildHeight
-        val t1 = height.toFloat() - paddingBottom - edgePadding - ch
+        val ch = maxChildHeight.toFloat()
+        val t1 = height - edgePadding - ch
         val t2 = t1 - edgePadding - ch
-        val t3 = t2 - edgePadding - ch - edgePadding - edgePadding + strokeWidth / 2
-        val b = t3 + edgePadding + ch + edgePadding - strokeWidth / 2
-        canvas.drawRoundRect(l, t3, r, b, corner, corner, paint)
+        val t3 = t2 - edgePadding - ch - edgePadding / 2
+        val t4 = t3 - edgePadding - ch
+
+        val l = strokeWidth / 2f
+        val t = t4 - edgePadding
+        val r = width - strokeWidth / 2f
+        val b = t4 + edgePadding + ch + edgePadding + ch - strokeWidth / 2
+        canvas.drawRoundRect(l, t, r, b, corner, corner, paint)
     }
     // endregion
 

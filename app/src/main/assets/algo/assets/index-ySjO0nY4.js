@@ -7444,15 +7444,15 @@ class Algo {
    * @param {CallBack} callback
    */
   insertionSort(a, callback) {
-    this.track(callback, true);
+    this.track(callback, true, ["i", 0], ["j", 0]);
     const n = a.length;
     for (let i = 1; i < n; i++) {
       let base = a[i];
       let j = i - 1;
-      this.track(callback);
+      this.track(callback, false, ["i", i]);
       callback.onUp(i, true);
       while (j >= 0 && a[j] > base) {
-        this.track(callback);
+        this.track(callback, false, ["j", j]);
         callback.onMove(j, j + 1, false);
         a[j + 1] = a[j];
         j--;
@@ -7472,7 +7472,7 @@ class Algo {
    * @param {CallBack} callback
    */
   quickSort(a, left, right, callback) {
-    this.track(callback, true);
+    this.track(callback, left == 0 && right == a.length - 1, ["i", left], ["j", right]);
     if (left >= right) {
       this.track(callback);
       return;
@@ -7483,16 +7483,16 @@ class Algo {
     while (i < j) {
       while (i < j && a[j] >= a[left]) {
         j--;
-        this.track(callback);
+        this.track(callback, false, ["j", j]);
       }
       while (i < j && a[i] <= a[left]) {
         i++;
-        this.track(callback);
+        this.track(callback, false, ["i", i]);
       }
       this.track(callback);
       this.swap(a, i, j, callback);
     }
-    this.track(callback);
+    this.track(callback, false, ["i", left]);
     this.swap(a, left, i, callback);
     this.quickSort(a, left, i - 1, callback);
     this.quickSort(a, i + 1, right, callback);
