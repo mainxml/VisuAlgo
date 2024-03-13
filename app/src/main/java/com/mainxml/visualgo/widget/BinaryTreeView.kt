@@ -13,6 +13,8 @@ import androidx.core.view.children
 import com.mainxml.visualgo.util.MyColor
 import com.mainxml.visualgo.util.dp
 import com.mainxml.visualgo.util.getScreenWidth
+import java.util.LinkedList
+import java.util.Queue
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.log2
@@ -25,6 +27,18 @@ import kotlin.math.sin
 class BinaryTreeView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : ViewGroup(context, attrs, defStyleAttr) {
+
+    /**
+     * 二叉树节点
+     */
+    data class Node(
+        val value: Int,
+        var left: Node? = null,
+        var right: Node? = null
+    )
+
+    /** 二叉树根节点 */
+    private var treeRoot: Node? = null
 
     /** 二叉树节点数组 */
     private var treeArray = intArrayOf()
@@ -62,6 +76,9 @@ class BinaryTreeView @JvmOverloads constructor(
     /** 获取二叉树节点数组 */
     fun getTreeArray() = treeArray
 
+    /** 获取二叉树根节点 */
+    fun getTreeRoot() = treeRoot
+
     /**
      * 添加节点
      * @param value Int?
@@ -77,12 +94,75 @@ class BinaryTreeView @JvmOverloads constructor(
         setTreeArray(treeArray.toMutableList().apply { add(v) }.toIntArray())
     }
 
-    private fun leftChildIndex(i: Int): Int {
-        return 2 * i + 1
+    /**
+     * 获取左子树的下标
+     * @param index Int
+     * @return Int
+     */
+    private fun leftChildIndex(index: Int): Int {
+        return 2 * index + 1
     }
 
-    private fun rightChildIndex(i: Int): Int {
-        return 2 * i + 2
+    /**
+     * 获取右子树的下标
+     * @param index Int
+     * @return Int
+     */
+    private fun rightChildIndex(index: Int): Int {
+        return 2 * index + 2
+    }
+
+    /**
+     * 数组转节点
+     */
+    private fun array2Node() {
+        if (treeArray.isEmpty()) {
+            return
+        }
+
+        val nodeList = mutableListOf<Node>()
+        for (value in treeArray) {
+            nodeList.add(Node(value))
+        }
+
+        treeRoot = nodeList[0]
+
+        for (index in treeArray.indices) {
+            val node = nodeList[index]
+
+            val leftChildIndex = leftChildIndex(index)
+            if (leftChildIndex in treeArray.indices) {
+                node.left = nodeList[leftChildIndex]
+            }
+
+            val rightChildIndex = rightChildIndex(index)
+            if (rightChildIndex in treeArray.indices) {
+                node.right = nodeList[rightChildIndex]
+            }
+        }
+    }
+
+    /**
+     * 节点转数组
+     */
+    private fun node2Array() {
+        if (treeRoot == null) {
+            return
+        }
+
+        val list = mutableListOf<Int>()
+
+        // 广度优先遍历
+        val queue: Queue<Node> = LinkedList()
+        queue.offer(treeRoot)
+        while (queue.isNotEmpty()) {
+            val node = queue.poll()
+            node?.value?.let { list.add(it)  }
+            node?.left?.let { queue.offer(it) }
+            node?.right?.let { queue.offer(it) }
+        }
+
+        setTreeArray(list.toIntArray())
     }
 
     // ---------------------------------------------------------------------
@@ -146,41 +226,16 @@ class BinaryTreeView @JvmOverloads constructor(
         val radius = childSize / 2
 
         children.forEachIndexed { index, child ->
-            // 计算节点坐标位置
+            // 计算节点坐标位置并布局
             calculateNodePoint(index, childNodePoint)
-
-            val cl: Int
-            val ct: Int
-            if (playAnimation && index == childCount - 1) {
-                // 最后一项时做点动画，起始位置放远点
-                cl = this.width / 2
-                ct = (childNodePoint.y - radius).toInt() + verticalSpacing
-            } else {
-                cl = (childNodePoint.x - radius).toInt()
-                ct = (childNodePoint.y - radius).toInt()
-            }
+            val cl = (childNodePoint.x - radius).toInt()
+            val ct = (childNodePoint.y - radius).toInt()
             val cr = cl + childSize
             val cb = ct + childSize
             child.layout(cl, ct, cr, cb)
 
-            // 最后一项时做点动画，移动回对应的位置
-            if (playAnimation && index == childCount - 1) {
-                val targetX = childNodePoint.x - radius
-                val targetY = childNodePoint.y - radius
-                postDelayed({
-                    child.animate().x(targetX).y(targetY)
-                        .setUpdateListener {
-                            // 同时重绘连接线
-                            this@BinaryTreeView.invalidate()
-                        }
-                        .setListener(object : AnimatorListenerAdapter() {
-                            override fun onAnimationEnd(animation: Animator) {
-                                playAnimation = false
-                            }
-                        })
-                        .start()
-                }, 300)
-            }
+            // 处理动画
+            handleAnimationIfNeed(index)
         }
     }
 
@@ -201,6 +256,37 @@ class BinaryTreeView @JvmOverloads constructor(
             drawNodeLine(canvas, leftChildIndex(index))
             // 绘制右子节点连接线
             drawNodeLine(canvas, rightChildIndex(index))
+        }
+    }
+
+    private fun handleAnimationIfNeed(index: Int) {
+        // “添加节点”动画效果：从下一行中间生成然后移动回对应的位置
+        if (playAnimation && index == childCount - 1) {
+            val childSize = getChildAt(0).measuredWidth
+            val radius = childSize / 2
+
+            val nl = this.width / 2
+            val nt = (childNodePoint.y - radius).toInt() + verticalSpacing
+            val nr = nl + childSize
+            val nb = nt + childSize
+            val child = getChildAt(index)
+            child.layout(nl, nt, nr, nb)
+
+            val targetX = childNodePoint.x - radius
+            val targetY = childNodePoint.y - radius
+            postDelayed({
+                child.animate().x(targetX).y(targetY)
+                    .setUpdateListener {
+                        // 同时重绘连接线
+                        this@BinaryTreeView.invalidate()
+                    }
+                    .setListener(object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            playAnimation = false
+                        }
+                    })
+                    .start()
+            }, 300)
         }
     }
 
