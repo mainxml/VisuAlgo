@@ -18,7 +18,14 @@ class VisualElement @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     enum class Type {
-        Element, Index, Point, TreeNode
+        /** 元素 */
+        Element,
+        /** 下标 */
+        Index,
+        /** 指针 */
+        Point,
+        /** 树节点 */
+        TreeNode
     }
 
     companion object {
@@ -111,16 +118,22 @@ class VisualElement @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         // 根据类型绘制图形
         paint.color = when (type) {
-            Type.Element, Type.TreeNode -> color
+            Type.Element,
+            Type.TreeNode -> color
             Type.Index -> MyColor.GRAY
             Type.Point -> MyColor.CYAN
         }
-        if (type != Type.TreeNode) {
-            // 绘制矩形
-            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
-        } else {
-            // 绘制圆形
-            canvas.drawCircle(width / 2f, height / 2f, size / 2f, paint)
+        when (type) {
+            Type.Element,
+            Type.Index,
+            Type.Point -> {
+                // 绘制矩形
+                canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
+            }
+            Type.TreeNode -> {
+                // 绘制圆形
+                canvas.drawCircle(width / 2f, height / 2f, size / 2f, paint)
+            }
         }
 
         // 绘制文字
