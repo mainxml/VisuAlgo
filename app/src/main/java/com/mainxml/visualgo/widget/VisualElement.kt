@@ -73,20 +73,12 @@ class VisualElement @JvmOverloads constructor(
             invalidate()
         }
 
-    /**
-     * 设置半径
-     * @param radius Float
-     */
-    fun setRadius(radius: Int) {
-        if (type != Type.TreeNode) {
-            return
-        }
-        size = radius * 2
-        invalidate()
-    }
-
     /** 元素大小 */
-    private var size: Int = if (isInEditMode) 72 else 24.dp
+    var size: Int = if (isInEditMode) 72 else 24.dp
+        set(value) {
+            field = value
+            invalidate()
+        }
 
     private val paint = Paint().apply {
         isAntiAlias = true
