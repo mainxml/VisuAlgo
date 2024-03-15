@@ -53,7 +53,7 @@ class BinaryTreeView @JvmOverloads constructor(
      * 动画状态枚举类
      */
     private enum class AnimationState {
-        NONE, ADD_NODE_TAIL
+        NONE, ADD_NODE_TAIL, SEARCH
     }
 
     init {
@@ -91,6 +91,22 @@ class BinaryTreeView @JvmOverloads constructor(
         animationStatus = AnimationState.ADD_NODE_TAIL
         val v = value ?: if (treeArray.isEmpty()) 0 else treeArray.last() + 1
         setTreeArray(treeArray.toMutableList().apply { add(v) }.toIntArray())
+    }
+
+    /** 搜索节点位置 */
+    private var searchNodePoint = PointF()
+
+    /**
+     * 搜索节点
+     * @param value Int
+     */
+    fun search(value: Int) {
+        val rootNodeView = getChildAt(0) as VisualElement
+        val radius = rootNodeView.measuredWidth / 2
+        searchNodePoint = PointF(rootNodeView.x + radius, rootNodeView.y + radius)
+        animationStatus = AnimationState.SEARCH
+
+        invalidate()
     }
 
     /**
@@ -175,15 +191,18 @@ class BinaryTreeView @JvmOverloads constructor(
     /** 垂直间距 */
     private val verticalSpacing = 40.dp
 
-    /** 搜索节点位置 */
-    private var searchNodePoint: PointF? = null
-
     private val curNodePoint = PointF()
     private val childNodePoint = PointF()
     private val linePath = Path()
     private var linePaint: Paint = Paint().apply {
         isAntiAlias = true
         color = MyColor.GRAY
+        style = Paint.Style.STROKE
+        strokeWidth = 2f.dp
+    }
+    private var searchPaint: Paint = Paint().apply {
+        isAntiAlias = true
+        color = MyColor.BLUE
         style = Paint.Style.STROKE
         strokeWidth = 2f.dp
     }
@@ -257,37 +276,11 @@ class BinaryTreeView @JvmOverloads constructor(
             // 绘制右子节点连接线
             drawNodeLine(canvas, rightChildIndex(index))
         }
-    }
 
-    private fun handleAnimation() {
-        if (animationStatus == AnimationState.ADD_NODE_TAIL) {
-            val child = getChildAt(childCount - 1) as VisualElement
-            val childSize = child.measuredWidth
-            val originX = child.x
-            val originY = child.y
-
-            val nl = width / 2
-            val nt = child.y.toInt() + verticalSpacing
-            val nr = nl + childSize
-            val nb = nt + childSize
-            child.layout(nl, nt, nr, nb)
-
-            post {
-                child.animate().apply {
-                    x(originX)
-                    y(originY)
-                    setUpdateListener {
-                        // 同时重绘连接线
-                        invalidate()
-                    }
-                    setListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            animationStatus = AnimationState.NONE
-                        }
-                    })
-                    start()
-                }
-            }
+        if (animationStatus == AnimationState.SEARCH) {
+            val rootNodeView = getChildAt(0) as VisualElement
+            val radius = rootNodeView.measuredWidth / 2f + 2f.dp
+            canvas.drawCircle(searchNodePoint.x, searchNodePoint.y, radius, searchPaint)
         }
     }
 
@@ -335,5 +328,37 @@ class BinaryTreeView @JvmOverloads constructor(
      */
     private fun calculateAngle(point1: PointF, point2: PointF): Float {
         return atan2((point2.y - point1.y), (point2.x - point1.x))
+    }
+
+    private fun handleAnimation() {
+        if (animationStatus == AnimationState.ADD_NODE_TAIL) {
+            val child = getChildAt(childCount - 1) as VisualElement
+            val childSize = child.measuredWidth
+            val originX = child.x
+            val originY = child.y
+
+            val nl = width / 2
+            val nt = child.y.toInt() + verticalSpacing
+            val nr = nl + childSize
+            val nb = nt + childSize
+            child.layout(nl, nt, nr, nb)
+
+            post {
+                child.animate().apply {
+                    x(originX)
+                    y(originY)
+                    setUpdateListener {
+                        // 同时重绘连接线
+                        invalidate()
+                    }
+                    setListener(object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            animationStatus = AnimationState.NONE
+                        }
+                    })
+                    start()
+                }
+            }
+        }
     }
 }
