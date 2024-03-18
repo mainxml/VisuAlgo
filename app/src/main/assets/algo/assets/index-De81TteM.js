@@ -7543,12 +7543,15 @@ class Algo {
   filterCharacter(sourceCode) {
     let lines = sourceCode.split("\n");
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].includes(", callback")) {
-        lines[i] = lines[i].replace(", callback", "");
-      }
       if (i == 0) {
         lines[i] = "function " + lines[i];
         continue;
+      }
+      if (lines[i].includes(", callback")) {
+        lines[i] = lines[i].replace(", callback", "");
+      }
+      if (lines[i].includes("callback.")) {
+        lines[i] = lines[i].replace("callback.", "// callback.");
       }
       if (lines[i].includes("this.")) {
         lines[i] = lines[i].replace("this.", "");
