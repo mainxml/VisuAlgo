@@ -145,7 +145,7 @@ class VisualArray @JvmOverloads constructor(
                     elementLeft = cr + elementPadding
                 }
                 VisualElement.Type.Index -> {
-                    // 在第三层高度绘制指针元素
+                    // 在第三层高度绘制下标元素
                     val cl = indexLeft
                     val cr = cl + cw
                     val cb = t3 + ch
